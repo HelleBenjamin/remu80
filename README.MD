@@ -14,4 +14,4 @@ Remu80 is a simple Z80 emulator written in C++. Its goal is to be a fully functi
 3. The program will be loaded into memory and executed. 
 
 ## License
-This project is released under the [GLP V3](https://www.gnu.org/licenses/gpl-3.0.en.html) license
+This project is released under the [GPL V3](https://www.gnu.org/licenses/gpl-3.0.en.html) license
