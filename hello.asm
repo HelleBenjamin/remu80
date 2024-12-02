@@ -37,7 +37,6 @@ loop:
     dec c
     push af
     ld a, c
-    cp 0
     jp nz, loop
     jr z, end
     
