@@ -72,7 +72,6 @@ class Z80_Core {
         uint8_t inputHandler();
         uint8_t outputHandler(uint8_t &reg);
         void swapRegs(uint8_t& temp1, uint8_t& temp2);
-        void flagsAfterCalcA();
         void decode_execute();
         void ed_instruction(uint8_t ins);
 };

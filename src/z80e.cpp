@@ -311,31 +311,8 @@ void Z80_Core::swapRegs(uint8_t& temp1, uint8_t& temp2) {
     temp1 = temp2;
     temp2 = temp3;
 }
-void Z80_Core::flagsAfterCalcA() {
-    if (acc > 255) {
-        f |= 0x01 | 0x04; // carry and overflow
-        a = acc;
-    } else if (acc < 0) {
-        f |= 0x02 | 0x80; // negative and sign
-        a = acc;
-    } else if (acc == 0) {
-        f |= 0x40; // zero
-        a = acc;
-    } else if (acc == a) {
-        bitset<8> acc_bits(acc);
-        size_t num_set_bits = acc_bits.count();
-        if (num_set_bits % 2 == 0) {
-            f |= 0x04; // set if even
-        } else {
-            f &= ~0x04; // clear if odd
-        }
-    } else {
-        a = acc;
-    }
-}
 
 void Z80_Core::decode_execute() {
-    uint8_t temp;
     switch (ins) {
         case 0x00: // NOP
             break;
