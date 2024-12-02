@@ -40,6 +40,8 @@ class Z80_Core {
         uint16_t ix, iy; // index registers
         bool isInput;
 
+        void alu(size_t& op1, size_t& op2, uint8_t ins);
+
         uint8_t fetchOperand();
         void fetchInstruction();
         uint8_t inputHandler();

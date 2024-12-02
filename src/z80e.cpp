@@ -93,6 +93,171 @@ void Z80_Core::printInfo() {
     cout << "AF: " << unsigned(a) << unsigned(f) << " BC: " << unsigned(b) << unsigned(c) << " DE: " << unsigned(d) << unsigned(e) << " HL: " << unsigned(h) << unsigned(l) << endl;
 }
 
+void Z80_Core::alu(size_t& op1, size_t& op2, uint8_t ins){
+    /* 
+    OP1 is the destination register
+    OP2 is the source register/immediate
+    INS is the ALU operation
+    
+    ALU instructions
+        0x00, 8-bit ADD reg, reg
+        0x01, 8-bit ADD reg, n
+        0x02, 16-bit ADD reg, reg
+        0x03, 16-bit ADD reg, nn
+        0x04, 8-bit ADC reg, reg
+        0x05, 8-bit ADC reg, n
+        0x06, 16-bit ADC reg, reg
+        0x07, 16-bit ADC reg, nn
+        0x08, 8-bit SUB reg, reg
+        0x09, 8-bit SUB reg, n
+        0x0A, 16-bit SUB reg, reg
+        0x0B, 16-bit SUB reg, nn
+        0x0C, 8-bit SBC reg, reg
+        0x0D, 8-bit SBC reg, n
+        0x0E, 16-bit SBC reg, reg
+        0x0F, 16-bit SBC reg, nn
+        0x10, 8-bit AND reg, reg
+        0x11, 8-bit AND reg, n
+        0x12, 8-bit OR reg, reg
+        0x13, 8-bit OR reg, n
+        0x14, 8-bit XOR reg, reg
+        0x15, 8-bit XOR reg, n
+        0x16, 8-bit CP reg, reg
+        0x17, 8-bit CP reg, n
+    */
+    bool bitShort = false; // false = 8-bit, true = 16-bit
+    bool isCompare = false;
+    int accumulator = 0;
+    switch (ins) {
+        case 0x00: // ADD reg, reg
+            accumulator = op1 + op2;
+            break;
+        case 0x01: // ADD reg, n
+            accumulator = op1 + op2;
+            break;
+        case 0x02: // ADD reg, reg
+            accumulator = op1 + op2;
+            bitShort = true;
+            break;
+        case 0x03: // ADD reg, nn
+            accumulator = op1 + op2;
+            bitShort = true;
+            break;
+        case 0x04: // ADC reg, reg
+            accumulator = op1 + op2 + (f & 0x01);
+            bitShort = true;
+            break;
+        case 0x05: // ADC reg, n
+            accumulator = op1 + op2 + (f & 0x01);
+            break;
+        case 0x06: // ADC reg, reg
+            accumulator = op1 + op2 + (f & 0x01);
+            bitShort = true;
+            break;
+        case 0x07: // ADC reg, nn
+            accumulator = op1 + op2 + (f & 0x01);
+            bitShort = true;
+            break;
+        case 0x08: // SUB reg, reg
+            accumulator = op1 - op2;
+            break;
+        case 0x09: // SUB reg, n
+            accumulator = op1 - op2;
+            break;
+        case 0x0A: // SUB reg, reg
+            accumulator = op1 - op2;
+            bitShort = true;
+            break;
+        case 0x0B: // SUB reg, nn
+            accumulator = op1 - op2;
+            bitShort = true;
+            break;
+        case 0x0C: // SBC reg, reg
+            accumulator = op1 - op2 - (f & 0x01);
+            break;
+        case 0x0D: // SBC reg, n
+            accumulator = op1 - op2 - (f & 0x01);
+            break;
+        case 0x0E: // SBC reg, reg
+            accumulator = op1 - op2 - (f & 0x01);
+            bitShort = true;
+            break;
+        case 0x0F: // SBC reg, nn
+            accumulator = op1 - op2 - (f & 0x01);
+            bitShort = true;
+            break;
+        case 0x10: // AND reg, reg
+            accumulator = op1 & op2;
+            break;
+        case 0x11: // AND reg, n
+            accumulator = op1 & op2;
+            break;
+        case 0x12: // OR reg, reg
+            accumulator = op1 | op2;
+            break;
+        case 0x13: // OR reg, n
+            accumulator = op1 | op2;
+            break;
+        case 0x14: // XOR reg, reg
+            accumulator = op1 ^ op2;
+            break;
+        case 0x15: // XOR reg, n
+            accumulator = op1 ^ op2;
+            break;
+        case 0x16: // CP reg, reg
+            accumulator = op1 - op2;
+            break;
+        case 0x17: // CP reg, n
+            accumulator = op1 - op2;
+            break;
+        default:
+            cout << "Invalid ALU instruction: " << hex << ins << endl;
+    }
+
+    //TODO: Add more flags and check if they should be set
+
+    if (accumulator == 0) {
+        f |= 0x40; // Set Z flag
+    } else {
+        f &= ~0x40; // Clear Z flag
+    }
+
+    if (accumulator > 0xff && !bitShort) { //8-bit overflow
+        f |= 0x01 | 0x04; // carry and overflow
+    } else {
+        f &= ~(0x01 | 0x04); // clear carry and overflow
+    }
+
+    if (accumulator > 0xffff && bitShort) { //16-bit overflow
+        f |= 0x01 | 0x04; // carry and overflow
+    } else {
+        f &= ~(0x01 | 0x04); // clear carry and overflow
+    }
+
+    if (accumulator < 0) {
+        f |= 0x02 | 0x80; // negative and sign
+    } else {
+        f &= ~(0x02 | 0x80); // clear negative and sign
+    }
+
+    if (isCompare){
+        if (accumulator == 0) {
+            f |= 0x40; // Set Z flag
+        } else {
+            f &= ~0x40; // Clear Z flag
+        }
+        return;
+    }
+
+    if (bitShort) {
+        op1 = bitset<16>(accumulator).to_ullong(); // Dest reg = 16-bit acc
+    } else {
+        op1 = bitset<8>(accumulator).to_ullong(); // Dest reg = 8-bit acc
+    }
+
+
+}
+
 uint8_t Z80_Core::fetchOperand() { // fetch operand
     uint8_t operand = memory[pc];
     pc++;
@@ -1257,10 +1422,12 @@ void Z80_Core::decode_execute() {
 }
 
 void Z80_Core::ed_instruction(uint8_t ins) {
-        switch (ins) {
-            case 0x40: // IN B, (C)
-                b = inputHandler();
-                break;
-        }
-        
+    switch (ins) {
+        case 0x40: // IN B, (C)
+            b = inputHandler();
+            break;
+        case 0x41: // OUT (C), B
+            outputHandler(b);
+            break;
     }
+}
