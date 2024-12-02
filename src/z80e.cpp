@@ -129,59 +129,61 @@ void Z80_Core::alu(uint16_t& op1, uint16_t& op2, uint8_t ins){
     int accumulator = 0;
     switch (ins) {
         case 0x00: // ADD8 reg, reg/n
-            accumulator = op1 + op2;
+            accumulator = (op1 & 0xFF) + (op2 & 0xFF);
             break;
         case 0x01: // ADD16 reg, reg/nn
             accumulator = op1 + op2;
             bitShort = true;
             break;
         case 0x02: // ADC8 reg, reg/n
-            accumulator = op1 + op2 + (f & 0x01);
+            accumulator = (op1 & 0xFF) + (op2 & 0xFF) + (f & 0x01);
             break;
         case 0x03: // ADC16 reg, reg/nn
             accumulator = op1 + op2 + (f & 0x01);
             bitShort = true;
             break;
         case 0x04: // SUB8 reg, reg/n
-            accumulator = op1 - op2;
+            accumulator = (op1 & 0xFF) - (op2 & 0xFF);
             break;
         case 0x05: // SUB16 reg, reg/nn
             accumulator = op1 - op2;
             bitShort = true;
             break;
         case 0x06: // SBC8 reg, reg/n
-            accumulator = op1 - op2 - (f & 0x01);
+            accumulator = (op1 & 0xFF) - (op2 & 0xFF) - (f & 0x01);
             break;
         case 0x07: // SBC16 reg, reg/nn
             accumulator = op1 - op2 - (f & 0x01);
             bitShort = true;
             break;
         case 0x08: // AND reg, reg/n
-            accumulator = op1 & op2;
+            accumulator = (op1 & 0xFF) & (op2 & 0xFF);
             break;
         case 0x09: // OR reg, reg/n
-            accumulator = op1 | op2;
+            accumulator = (op1 & 0xFF) | (op2 & 0xFF);
             break;
         case 0x0A: // XOR reg, reg/n
-            accumulator = op1 ^ op2;
+            accumulator = (op1 & 0xFF) ^ (op2 & 0xFF);
             break;
         case 0x0B: // CP reg, reg/n
-            accumulator = op1 - op2;
+            accumulator = (op1 & 0xFF) - (op2 & 0xFF);
             isCompare = true;
             break;
         case 0x0C: // INC reg
-            accumulator = op1 + 1;
+            accumulator = (op1 & 0xFF) + 1;
             break;
         case 0x0D: // DEC reg
-            accumulator = op1 - 1;
+            accumulator = (op1 & 0xFF) - 1;
             break;
         case 0x0E: // RLC reg
+            op1 = op1 & 0xFF; // clear upper 8 bits
             f = (op1 & 0x80) ? (f | 0x01) : (f & ~0x01); // carry flag
             op1 = ((op1 << 1) | (op1 >> 7)) & 0xFF;
             f = (op1 == 0) ? (f | 0x40) : (f & ~0x40); // zero flag
             return;
             break;
         case 0x0F: // RL reg
+            op1 = op1 & 0xFF; // clear upper 8 bits
             {
                 bool carry_in = f & 0x01;
                 f = (op1 & 0x80) ? (f | 0x01) : (f & ~0x01);
@@ -191,12 +193,14 @@ void Z80_Core::alu(uint16_t& op1, uint16_t& op2, uint8_t ins){
             return;
             break;
         case 0x10: // RRC reg
+            op1 = op1 & 0xFF; // clear upper 8 bits
             f = (op1 & 0x01) ? (f | 0x01) : (f & ~0x01);
             op1 = ((op1 >> 1) | (op1 << 7)) & 0xFF;
             f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
             return;
             break;
         case 0x11: // RR reg
+            op1 = op1 & 0xFF; // clear upper 8 bits
             {
                 bool carry_in = f & 0x01;
                 f = (op1 & 0x01) ? (f | 0x01) : (f & ~0x01);
@@ -206,18 +210,21 @@ void Z80_Core::alu(uint16_t& op1, uint16_t& op2, uint8_t ins){
             return;
             break;
         case 0x12: // SLA reg
+            op1 = op1 & 0xFF; // clear upper 8 bits
             f = (op1 & 0x80) ? (f | 0x01) : (f & ~0x01);
             op1 = (op1 << 1) & 0xFF;
             f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
             return;
             break;
         case 0x13: // SRA reg
+            op1 = op1 & 0xFF; // clear upper 8 bits
             f = (op1 & 0x01) ? (f | 0x01) : (f & ~0x01);
             op1 = (op1 >> 1) | (op1 & 0x80);
             f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
             return;
             break;
         case 0x14: // SRL reg
+            op1 = op1 & 0xFF; // clear upper 8 bits
             f = (op1 & 0x01) ? (f | 0x01) : (f & ~0x01);
             op1 = (op1 >> 1);
             f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
