@@ -95,128 +95,145 @@ void Z80_Core::printInfo() {
     cout << "A: 0x" << hex << unsigned(a) << " BC: 0x" << unsigned(b) << unsigned(c) << " DE: 0x" << unsigned(d) << unsigned(e) << " HL: 0x" << unsigned(h) << unsigned(l) << endl;
 }
 
-void Z80_Core::alu(size_t& op1, size_t& op2, uint8_t ins){
+void Z80_Core::alu(uint16_t& op1, uint16_t& op2, uint8_t ins){
     /* 
     OP1 is the destination register
     OP2 is the source register/immediate
     INS is the ALU operation
     
     ALU instructions
-        0x00, 8-bit ADD reg, reg
-        0x01, 8-bit ADD reg, n
-        0x02, 16-bit ADD reg, reg
-        0x03, 16-bit ADD reg, nn
-        0x04, 8-bit ADC reg, reg
-        0x05, 8-bit ADC reg, n
-        0x06, 16-bit ADC reg, reg
-        0x07, 16-bit ADC reg, nn
-        0x08, 8-bit SUB reg, reg
-        0x09, 8-bit SUB reg, n
-        0x0A, 16-bit SUB reg, reg
-        0x0B, 16-bit SUB reg, nn
-        0x0C, 8-bit SBC reg, reg
-        0x0D, 8-bit SBC reg, n
-        0x0E, 16-bit SBC reg, reg
-        0x0F, 16-bit SBC reg, nn
-        0x10, 8-bit AND reg, reg
-        0x11, 8-bit AND reg, n
-        0x12, 8-bit OR reg, reg
-        0x13, 8-bit OR reg, n
-        0x14, 8-bit XOR reg, reg
-        0x15, 8-bit XOR reg, n
-        0x16, 8-bit CP reg, reg
-        0x17, 8-bit CP reg, n
+        0x00, 8-bit ADD reg, reg/n
+        0x01, 16-bit ADD reg, reg/nn
+        0x02, 8-bit ADC reg, reg/n
+        0x03, 16-bit ADC reg, reg/nn
+        0x04, 8-bit SUB reg, reg/n
+        0x05, 16-bit SUB reg, reg/nn
+        0x06, 8-bit SBC reg, reg/n
+        0x07, 16-bit SBC reg, reg/nn
+        0x08, 8-bit AND reg, reg/n
+        0x09, 8-bit OR reg, reg/n
+        0x0A, 8-bit XOR reg, reg/n
+        0x0B, 8-bit CP reg, reg/n
+        0x0C, 8-bit INC reg
+        0x0D, 8-bit DEC reg
+        0x0E, RLC reg
+        0x0F, RL reg
+        0x10, RRC reg
+        0x11, RR reg
+        0x12, SLA reg
+        0x13, SRA reg
+        0x14, SRL reg
     */
     bool bitShort = false; // false = 8-bit, true = 16-bit
     bool isCompare = false;
     int accumulator = 0;
     switch (ins) {
-        case 0x00: // ADD reg, reg
+        case 0x00: // ADD8 reg, reg/n
             accumulator = op1 + op2;
             break;
-        case 0x01: // ADD reg, n
-            accumulator = op1 + op2;
-            break;
-        case 0x02: // ADD reg, reg
+        case 0x01: // ADD16 reg, reg/nn
             accumulator = op1 + op2;
             bitShort = true;
             break;
-        case 0x03: // ADD reg, nn
-            accumulator = op1 + op2;
-            bitShort = true;
+        case 0x02: // ADC8 reg, reg/n
+            accumulator = op1 + op2 + (f & 0x01);
             break;
-        case 0x04: // ADC reg, reg
+        case 0x03: // ADC16 reg, reg/nn
             accumulator = op1 + op2 + (f & 0x01);
             bitShort = true;
             break;
-        case 0x05: // ADC reg, n
-            accumulator = op1 + op2 + (f & 0x01);
-            break;
-        case 0x06: // ADC reg, reg
-            accumulator = op1 + op2 + (f & 0x01);
-            bitShort = true;
-            break;
-        case 0x07: // ADC reg, nn
-            accumulator = op1 + op2 + (f & 0x01);
-            bitShort = true;
-            break;
-        case 0x08: // SUB reg, reg
+        case 0x04: // SUB8 reg, reg/n
             accumulator = op1 - op2;
             break;
-        case 0x09: // SUB reg, n
-            accumulator = op1 - op2;
-            break;
-        case 0x0A: // SUB reg, reg
+        case 0x05: // SUB16 reg, reg/nn
             accumulator = op1 - op2;
             bitShort = true;
             break;
-        case 0x0B: // SUB reg, nn
-            accumulator = op1 - op2;
-            bitShort = true;
-            break;
-        case 0x0C: // SBC reg, reg
+        case 0x06: // SBC8 reg, reg/n
             accumulator = op1 - op2 - (f & 0x01);
             break;
-        case 0x0D: // SBC reg, n
-            accumulator = op1 - op2 - (f & 0x01);
-            break;
-        case 0x0E: // SBC reg, reg
+        case 0x07: // SBC16 reg, reg/nn
             accumulator = op1 - op2 - (f & 0x01);
             bitShort = true;
             break;
-        case 0x0F: // SBC reg, nn
-            accumulator = op1 - op2 - (f & 0x01);
-            bitShort = true;
-            break;
-        case 0x10: // AND reg, reg
+        case 0x08: // AND reg, reg/n
             accumulator = op1 & op2;
             break;
-        case 0x11: // AND reg, n
-            accumulator = op1 & op2;
-            break;
-        case 0x12: // OR reg, reg
+        case 0x09: // OR reg, reg/n
             accumulator = op1 | op2;
             break;
-        case 0x13: // OR reg, n
-            accumulator = op1 | op2;
-            break;
-        case 0x14: // XOR reg, reg
+        case 0x0A: // XOR reg, reg/n
             accumulator = op1 ^ op2;
             break;
-        case 0x15: // XOR reg, n
-            accumulator = op1 ^ op2;
-            break;
-        case 0x16: // CP reg, reg
+        case 0x0B: // CP reg, reg/n
             accumulator = op1 - op2;
             break;
-        case 0x17: // CP reg, n
-            accumulator = op1 - op2;
+        case 0x0C: // INC reg
+            accumulator = op1 + 1;
+            break;
+        case 0x0D: // DEC reg
+            accumulator = op1 - 1;
+            break;
+        case 0x0E: // RLC reg
+            f = (op1 & 0x80) ? (f | 0x01) : (f & ~0x01); // carry flag
+            op1 = ((op1 << 1) | (op1 >> 7)) & 0xFF;
+            f = (op1 == 0) ? (f | 0x40) : (f & ~0x40); // zero flag
+            return;
+            break;
+        case 0x0F: // RL reg
+            {
+                bool carry_in = f & 0x01;
+                f = (op1 & 0x80) ? (f | 0x01) : (f & ~0x01);
+                op1 = ((op1 << 1) | carry_in) & 0xFF;
+                f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
+            }
+            return;
+            break;
+        case 0x10: // RRC reg
+            f = (op1 & 0x01) ? (f | 0x01) : (f & ~0x01);
+            op1 = ((op1 >> 1) | (op1 << 7)) & 0xFF;
+            f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
+            return;
+            break;
+        case 0x11: // RR reg
+            {
+                bool carry_in = f & 0x01;
+                f = (op1 & 0x01) ? (f | 0x01) : (f & ~0x01);
+                op1 = ((op1 >> 1) | (carry_in << 7)) & 0xFF;
+                f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
+            }
+            return;
+            break;
+        case 0x12: // SLA reg
+            f = (op1 & 0x80) ? (f | 0x01) : (f & ~0x01);
+            op1 = (op1 << 1) & 0xFF;
+            f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
+            return;
+            break;
+        case 0x13: // SRA reg
+            f = (op1 & 0x01) ? (f | 0x01) : (f & ~0x01);
+            op1 = (op1 >> 1) | (op1 & 0x80);
+            f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
+            return;
+            break;
+        case 0x14: // SRL reg
+            f = (op1 & 0x01) ? (f | 0x01) : (f & ~0x01);
+            op1 = (op1 >> 1);
+            f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
+            return;
             break;
         default:
             cout << "Invalid ALU instruction: " << hex << ins << endl;
     }
 
-    //TODO: Add more flags and check if they should be set
+    if (isCompare){
+        if (accumulator == 0) {
+            f |= 0x40; // Set Z flag
+        } else {
+            f &= ~0x40; // Clear Z flag
+        }
+        return;
+    }
 
     if (accumulator == 0) {
         f |= 0x40; // Set Z flag
@@ -242,22 +259,14 @@ void Z80_Core::alu(size_t& op1, size_t& op2, uint8_t ins){
         f &= ~(0x02 | 0x80); // clear negative and sign
     }
 
-    if (isCompare){
-        if (accumulator == 0) {
-            f |= 0x40; // Set Z flag
-        } else {
-            f &= ~0x40; // Clear Z flag
-        }
-        return;
-    }
 
-    if (bitShort) {
-        op1 = bitset<16>(accumulator).to_ullong(); // Dest reg = 16-bit acc
+    if (accumulator & 0x01) {
+        f |= 0x04; // set odd flag
     } else {
-        op1 = bitset<8>(accumulator).to_ullong(); // Dest reg = 8-bit acc
+        f &= ~0x04; // clear odd flag
     }
 
-
+    op1 = bitShort ? static_cast<uint16_t>(accumulator) : static_cast<uint8_t>(accumulator);
 }
 
 uint8_t Z80_Core::fetchOperand() { // fetch operand
@@ -333,22 +342,22 @@ void Z80_Core::decode_execute() {
             }
             break;
         case 0x04: // INC B
-            b++;
+            alu((uint16_t&)b, (uint16_t&)w, ALU_INC8);
             break;
         case 0x05: // DEC B
-            b--;
+            alu((uint16_t&)b, (uint16_t&)w, ALU_DEC8);
             break;
         case 0x06: // LD B, n
             b = fetchOperand();
             break;
         case 0x07: // RLCA
-            a = a << 1;
+            alu((uint16_t&)a, (uint16_t&)f, ALU_RLC8);
             break;
         case 0x08: // EX AF, AF'
-            temp = (uint8_t)(afa << 8);
-            swapRegs(a, temp);
-            temp = (uint8_t)(afa & 0xff);
-            swapRegs(f, temp);
+            w = (uint8_t)(afa << 8);
+            swapRegs(a, w);
+            w = (uint8_t)(afa & 0xff);
+            swapRegs(f, w);
             break;
         case 0x09: // ADD HL, BC
             acc = (h << 8 | l) + (c << 8 | b);
@@ -369,17 +378,16 @@ void Z80_Core::decode_execute() {
             }
             break;
         case 0x0C: // INC C
-            c++;
+            alu((uint16_t&)c, (uint16_t&)w, ALU_INC8);
             break;
         case 0x0D: // DEC C
-            c--;
+            alu((uint16_t&)c, (uint16_t&)w, ALU_DEC8);
             break;
         case 0x0E: // LD C, n
             c = fetchOperand();
             break;
         case 0x0F: // RRCA
-            a = a >> 1;
-            f = a & 0x01;
+            alu((uint16_t&)a, (uint16_t&)f, ALU_RRC8);
             break;
         case 0x10: // DJNZ nn
             b--;
@@ -403,16 +411,16 @@ void Z80_Core::decode_execute() {
             }
             break;
         case 0x14: // INC D
-            d++;
+            alu((uint16_t&)d, (uint16_t&)w, ALU_INC8);
             break;
         case 0x15: // DEC D
-            d--;
+            alu((uint16_t&)d, (uint16_t&)w, ALU_DEC8);
             break;
         case 0x16: // LD D, n
             d = fetchOperand();
             break;
         case 0x17: // RLA
-            a = a << 1;
+            alu((uint16_t&)a, (uint16_t&)f, ALU_RL8);
             break;
         case 0x18: // JR n
             pc = pc + fetchOperand();
@@ -436,16 +444,16 @@ void Z80_Core::decode_execute() {
             }
             break;
         case 0x1C: // INC E
-            e++;
+            alu((uint16_t&)e, (uint16_t&)w, ALU_INC8);
             break;
         case 0x1D: // DEC E
-            e--;
+            alu((uint16_t&)e, (uint16_t&)w, ALU_DEC8);
             break;
         case 0x1E: // LD E, n
             e = fetchOperand();
             break;
         case 0x1F: // RRA
-            a = a >> 1;
+            alu((uint16_t&)a, (uint16_t&)f, ALU_RR8);
             break;
         case 0x20: // JR NZ, n
             if (!(f & 0x40)){
@@ -469,10 +477,10 @@ void Z80_Core::decode_execute() {
             }
             break;
         case 0x24: // INC H
-            h++;
+            alu((uint16_t&)h, (uint16_t&)w, ALU_INC8);
             break;
         case 0x25: // DEC H
-            h--;
+            alu((uint16_t&)h, (uint16_t&)w, ALU_DEC8);
             break;
         case 0x26: // LD H, n
             h = fetchOperand();
@@ -505,10 +513,10 @@ void Z80_Core::decode_execute() {
             }
             break;
         case 0x2C: // INC L
-            l++;
+            alu((uint16_t&)l, (uint16_t&)w, ALU_INC8);
             break;
         case 0x2D: // DEC L
-            l--;
+            alu((uint16_t&)l, (uint16_t&)w, ALU_DEC8);
             break;
         case 0x2E: // LD L, n
             l = fetchOperand();
@@ -532,10 +540,12 @@ void Z80_Core::decode_execute() {
             sp++;
             break;
         case 0x34: // INC (HL)
-            memory[l | (h << 8)]++;
+            alu((uint16_t&)memory[l | (h << 8)], (uint16_t&)w, ALU_INC8);
+            //memory[l | (h << 8)]++;
             break;
         case 0x35: // DEC (HL)
-            memory[l | (h << 8)]--;
+            alu((uint16_t&)memory[l | (h << 8)], (uint16_t&)w, ALU_DEC8);
+            //memory[l | (h << 8)]--;
             break;
         case 0x36: // LD (HL), n
             memory[l | (h << 8)] = fetchOperand();
@@ -563,10 +573,10 @@ void Z80_Core::decode_execute() {
             sp--;
             break;
         case 0x3C: // INC A
-            a++;
+            alu((uint16_t&)a, (uint16_t&)a, ALU_INC8);
             break;
         case 0x3D: // DEC A
-            a--;
+            alu((uint16_t&)a, (uint16_t&)a, ALU_DEC8);
             break;
         case 0x3E: // LD A, n
             a = fetchOperand();
@@ -767,136 +777,103 @@ void Z80_Core::decode_execute() {
             a = a;
             break;
         case 0x80: // ADD A, B
-            acc = a + b;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)b, ALU_ADD8);
             break;
         case 0x81: // ADD A, C
-            acc = a + c;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)c, ALU_ADD8);
             break;
         case 0x82: // ADD A, D
-            acc = a + d;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)d, ALU_ADD8);
             break;
         case 0x83: // ADD A, E
-            acc = a + e;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)e, ALU_ADD8);
             break;
         case 0x84: // ADD A, H
-            acc = a + h;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)h, ALU_ADD8);
             break;
         case 0x85: // ADD A, L
-            acc = a + l;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)l, ALU_ADD8);
             break;
         case 0x86: // ADD A, (HL)
-            acc = a + memory[l | (h << 8)];
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)memory[l | (h << 8)], ALU_ADD8);
             break;
         case 0x87: // ADD A, A
-            acc = a + a;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)a, ALU_ADD8);
             break;
         case 0x88: // ADC A, B
-            acc = a + b + (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)b, ALU_ADC8);
             break;
         case 0x89: // ADC A, C
-            acc = a + c + (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)c, ALU_ADC8);
             break;
         case 0x8A: // ADC A, D
-            acc = a + d + (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)d, ALU_ADC8);
             break;
         case 0x8B: // ADC A, E
-            acc = a + e + (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)e, ALU_ADC8);
             break;
         case 0x8C: // ADC A, H
-            acc = a + h + (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)h, ALU_ADC8);
             break;
         case 0x8D: // ADC A, L
-            acc = a + l + (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)l, ALU_ADC8);
             break;
         case 0x8E: // ADC A, (HL)
-            acc = a + memory[l | (h << 8)] + (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)memory[l | (h << 8)], ALU_ADC8);
             break;
         case 0x8F: // ADC A, A
-            acc = a + a + (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)a, ALU_ADC8);
             break;
         case 0x90: // SUB B
-            acc = a - b;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)b, ALU_SUB8);
             break;
         case 0x91: // SUB C
-            acc = a - c;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)c, ALU_SUB8);
             break;
         case 0x92: // SUB D
-            acc = a - d;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)d, ALU_SUB8);
             break;
         case 0x93: // SUB E
-            acc = a - e;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)e, ALU_SUB8);
             break;
         case 0x94: // SUB H
-            acc = a - h;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)h, ALU_SUB8);
             break;
         case 0x95: // SUB L
-            acc = a - l;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)l, ALU_SUB8);
             break;
         case 0x96: // SUB (HL)
-            acc = a - memory[l | (h << 8)];
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)memory[l | (h << 8)], ALU_SUB8);
             break;
         case 0x97: // SUB A
-            acc = a - a;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)a, ALU_SUB8);
             break;
         case 0x98: // SBC A, B
-            acc = a - b - (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)b, ALU_SBC8);
             break;
         case 0x99: // SBC A, C
-            acc = a - c - (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)c, ALU_SBC8);
             break;
         case 0x9A: // SBC A, D
-            acc = a - d - (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)d, ALU_SBC8);
             break;
         case 0x9B: // SBC A, E
-            acc = a - e - (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)e, ALU_SBC8);
             break;
         case 0x9C: // SBC A, H
-            acc = a - h - (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)h, ALU_SBC8);
             break;
         case 0x9D: // SBC A, L
-            acc = a - l - (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)l, ALU_SBC8);
             break;
         case 0x9E: // SBC A, (HL)
-            acc = a - memory[l | (h << 8)] - (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)memory[l | (h << 8)], ALU_SBC8);
             break;
         case 0x9F: // SBC A, A
-            acc = a - a - (f & 0x01);
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)a, ALU_SBC8);
             break;
         case 0xA0: // AND B
-            acc = a & b;
-            flagsAfterCalcA();
+            alu((uint16_t&)a, (uint16_t&)b, ALU_AND8);
             break;
         case 0xA1: // AND C
             acc = a & c;

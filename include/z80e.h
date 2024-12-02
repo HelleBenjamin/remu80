@@ -11,9 +11,34 @@
 #include <unistd.h> //comment for windows
 #include <fstream>
 #include <cstdint>
+
 #define MEMORY_SIZE 0xffff
 
+
+#define ALU_ADD8 0x00
+#define ALU_ADD16 0x01
+#define ALU_ADC8 0x02
+#define ALU_ADC16 0x03
+#define ALU_SUB8 0x04
+#define ALU_SUB16 0x05
+#define ALU_SBC8 0x06
+#define ALU_SBC16 0x07
+#define ALU_AND8 0x08
+#define ALU_OR8 0x09
+#define ALU_XOR8 0x0A
+#define ALU_CP8 0x0B
+#define ALU_INC8 0x0C
+#define ALU_DEC8 0x0D
+#define ALU_RLC8 0x0E
+#define ALU_RL8 0x0F
+#define ALU_RRC8 0x10
+#define ALU_RR8 0x11
+#define ALU_SLA8 0x12
+#define ALU_SRA8 0x13
+#define ALU_SRL8 0x14
+
 using namespace std;
+
 class Z80_Core {
     public:
         bool DEBUG;
@@ -40,7 +65,7 @@ class Z80_Core {
         uint16_t ix, iy; // index registers
         bool isInput;
 
-        void alu(size_t& op1, size_t& op2, uint8_t ins);
+        void alu(uint16_t& op1, uint16_t& op2, uint8_t ins);
 
         uint8_t fetchOperand();
         void fetchInstruction();
