@@ -61,7 +61,7 @@ void Z80_Core::reset() {
     afa = bca = dea = hla = 0;
     ix = iy = 0;
     pc = 0;
-    sp = RAM_SIZE + 1;
+    sp = MEMORY_SIZE;
     acc = 0;
     f = 0;
     halt = false;
@@ -77,6 +77,9 @@ void Z80_Core::run() {
         decode_execute();
         //Sleep(10);
     }
+    if (DEBUG) {
+        printInfo();
+    }
 }
 
 void Z80_Core::printCurrentState() {
@@ -87,10 +90,9 @@ void Z80_Core::printCurrentState() {
 }
 
 void Z80_Core::printInfo() {
-    cout << "PC: " << pc << " SP: " << sp << " F: " << bitset<8>(f) << endl;
-    cout << "IX: " << ix << " IY: " << iy << endl;
-    cout << "ACC: " << acc << endl;
-    cout << "AF: " << unsigned(a) << unsigned(f) << " BC: " << unsigned(b) << unsigned(c) << " DE: " << unsigned(d) << unsigned(e) << " HL: " << unsigned(h) << unsigned(l) << endl;
+    cout << "PC: 0x" << hex << pc << " SP: 0x" << sp << " F: 0x" << bitset<8>(f) << endl;
+    cout << "IX: 0x" << ix << " IY: 0x" << iy << endl;
+    cout << "A: 0x" << hex << unsigned(a) << " BC: 0x" << unsigned(b) << unsigned(c) << " DE: 0x" << unsigned(d) << unsigned(e) << " HL: 0x" << unsigned(h) << unsigned(l) << endl;
 }
 
 void Z80_Core::alu(size_t& op1, size_t& op2, uint8_t ins){

@@ -9,7 +9,9 @@ int main(int argc, char *argv[]) {
         if ((string(argv[i])).find("-p") == 0) { // source program
             filename = argv[i + 1];
         }
-        
+        if ((string(argv[i])).find("-d") == 0) { // debug mode
+            z80.DEBUG = true;
+        }
     }
     vector<uint8_t> executable_program = loadHexToVector(filename);
     z80.loadProgram(executable_program);

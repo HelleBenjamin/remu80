@@ -11,7 +11,7 @@
 #include <unistd.h> //comment for windows
 #include <fstream>
 #include <cstdint>
-#define RAM_SIZE 65536
+#define MEMORY_SIZE 0xffff
 
 using namespace std;
 class Z80_Core {
@@ -27,7 +27,7 @@ class Z80_Core {
         void printCurrentState();
     private:
         uint8_t ins;
-        uint8_t memory[RAM_SIZE];
+        uint8_t memory[MEMORY_SIZE];
         bool halt, interrupts;
         vector<string> rom;
         unsigned pc; // program counter

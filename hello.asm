@@ -25,4 +25,24 @@ main:
     out (0), a
     ld a, '\n'
     out (0), a
+    
+    ld a, '0'
+    ld c, 48
+    push af
+    
+loop:
+    pop af
+    out (0), a
+    inc a
+    dec c
+    push af
+    ld a, c
+    cp 0
+    jp nz, loop
+    jr z, end
+    
+    
+end:
+    ld a, '\n'
+    out (0), a
     halt
