@@ -1589,6 +1589,54 @@ void Z80_Core::cb_instruction(uint8_t ins) {
         case 0x0F: // RRC A
             alu((uint16_t&)a, 0, ALU_RRC8);
             break;
+        case 0x10: // RL B
+            alu((uint16_t&)b, 0, ALU_RL8);
+            break;
+        case 0x11: // RL C
+            alu((uint16_t&)c, 0, ALU_RL8);
+            break;
+        case 0x12: // RL D
+            alu((uint16_t&)d, 0, ALU_RL8);
+            break;
+        case 0x13: // RL E
+            alu((uint16_t&)e, 0, ALU_RL8);
+            break;
+        case 0x14: // RL H
+            alu((uint16_t&)h, 0, ALU_RL8);
+            break;
+        case 0x15: // RL L
+            alu((uint16_t&)l, 0, ALU_RL8);
+            break;
+        case 0x16: // RL (HL)
+            alu((uint16_t&)memory[hla], 0, ALU_RL8);
+            break;
+        case 0x17: // RL A
+            alu((uint16_t&)a, 0, ALU_RL8);
+            break;
+        case 0x18: // RR B
+            alu((uint16_t&)b, 0, ALU_RR8);
+            break;
+        case 0x19: // RR C
+            alu((uint16_t&)c, 0, ALU_RR8);
+            break;
+        case 0x1A: // RR D
+            alu((uint16_t&)d, 0, ALU_RR8);
+            break;
+        case 0x1B: // RR E
+            alu((uint16_t&)e, 0, ALU_RR8);
+            break;
+        case 0x1C: // RR H
+            alu((uint16_t&)h, 0, ALU_RR8);
+            break;
+        case 0x1D: // RR L
+            alu((uint16_t&)l, 0, ALU_RR8);
+            break;
+        case 0x1E: // RR (HL)
+            alu((uint16_t&)memory[hla], 0, ALU_RR8);
+            break;
+        case 0x1F: // RR A
+            alu((uint16_t&)a, 0, ALU_RR8);
+            break;
         default:
             cout << "Invalid BIT instruction: " << hex << (int)ins << endl;
     }
