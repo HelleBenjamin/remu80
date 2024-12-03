@@ -1523,7 +1523,12 @@ void Z80_Core::ed_instruction(uint8_t ins) {
             temp = (uint16_t&)l | (h << 8);
             alu(temp, sp, ALU_ADC16);
             l = temp & 0xFF;
-            h = temp >> 8;   
+            h = temp >> 8;
+        case 0x7B: // LD (nn), SP
+            temp = fetchOperand() | (fetchOperand() << 8);
+            sp = (memory[temp] | memory[temp+1] << 8);
+        // TODO: IMPLEMENT REMAINING OPCODES
+
         default:
             cout << "Invalid instruction: " << hex << (int)ins << endl;
             break;
