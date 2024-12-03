@@ -61,13 +61,13 @@ void Z80_Core::reset() {
     afa = bca = dea = hla = 0;
     ix = iy = 0;
     pc = 0;
-    sp = MEMORY_SIZE;
+    sp = MEMORY_SIZE; // set sp to top of memory
     acc = 0;
     f = 0;
     halt = false;
     interrupts = true;
     isInput = false;
-    iff1, iff2 = true;
+    iff1, iff2 = false;
 }
 
 void Z80_Core::run() {
@@ -96,7 +96,7 @@ void Z80_Core::printInfo() {
     cout << "A: 0x" << hex << unsigned(a) << " BC: 0x" << unsigned(b) << unsigned(c) << " DE: 0x" << unsigned(d) << unsigned(e) << " HL: 0x" << unsigned(h) << unsigned(l) << endl;
 }
 
-void Z80_Core::alu(uint16_t& op1, uint16_t& op2, uint8_t ins){
+void Z80_Core::alu(uint16_t& op1, uint16_t op2, uint8_t ins){
     /* 
     OP1 is the destination register
     OP2 is the source register/immediate
@@ -327,6 +327,10 @@ void Z80_Core::swapRegs(uint8_t& temp1, uint8_t& temp2) {
     uint8_t temp3 = temp1;
     temp1 = temp2;
     temp2 = temp3;
+}
+
+uint16_t Z80_Core::convToRegPair(uint8_t l, uint8_t h) {
+    return (uint16_t)l | (h << 8);
 }
 
 void Z80_Core::decode_execute() {
@@ -1387,12 +1391,120 @@ void Z80_Core::ed_instruction(uint8_t ins) {
             // Add more functionality later when interrupts are better implemented
             pc = memory[sp] | (memory[sp+1] << 8);
             sp += 2;
+            iff1 = iff2;
             break;
         case 0x46: // IM 0
-            interrupts = false;
+            im = 0;
             break;
         case 0x47: // LD I, A
             i = a;
+            break;
+        case 0x48: // IN C, (C)
+            c = inputHandler(c);
+            break;
+        case 0x49: // OUT (C), C
+            outputHandler(c, c);
+            break;
+        case 0x4A: // ADC HL, BC
+            temp = (uint16_t&)l | (h << 8);
+            temp2 = (uint16_t&)c | (b << 8);
+            alu(temp,temp2, ALU_ADC16);
+            l = temp & 0xFF;
+            h = temp >> 8;
+            break;
+        case 0x4B: // LD BC, (nn)
+            c = memory[fetchOperand() | (fetchOperand() << 8)];
+            b = memory[fetchOperand() | (fetchOperand() << 8) + 1];
+            break;
+        case 0x4D: // RETI
+            // Add more functionality later when interrupts are better implemented
+            pc = memory[sp] | (memory[sp+1] << 8);
+            sp += 2;
+            iff1 = iff2;
+            break;
+        case 0x4F: // LD R, A
+            r = a;
+            break;
+        case 0x50: // IN D, (C)
+            d = inputHandler(c);
+            break;
+        case 0x51: // OUT (C), D
+            outputHandler(d, c);
+            break;
+        case 0x52: // SBC HL, DE
+            temp = (uint16_t&)l | (h << 8);
+            temp2 = (uint16_t&)d | (e << 8);
+            alu(temp,temp2, ALU_SBC16);
+            l = temp & 0xFF;
+            h = temp >> 8;
+            break;
+        case 0x53: // LD (nn), DE
+            memory[fetchOperand() | (fetchOperand() << 8)] = e;
+            memory[fetchOperand() | (fetchOperand() << 8) + 1] = d;
+            break;
+        case 0x56: // IM 1
+            im = 1;
+            break;
+        case 0x57: // LD A, I
+            a = i;
+            break;
+        case 0x58: // IN E, (C)
+            e = inputHandler(c);
+            break;
+        case 0x59: // OUT (C), E
+            outputHandler(e, c);
+            break;
+        case 0x5A: // ADC HL, DE
+            temp = (uint16_t&)l | (h << 8);
+            temp2 = (uint16_t&)d | (e << 8);
+            alu(temp,temp2, ALU_ADC16);
+            l = temp & 0xFF;
+            h = temp >> 8;
+            break;
+        case 0x5B: // LD DE, (nn)
+            e = memory[fetchOperand() | (fetchOperand() << 8)];
+            d = memory[fetchOperand() | (fetchOperand() << 8) + 1];
+            break;
+        case 0x5E: // IM 2
+            im = 2;
+            break;
+        case 0x5F: // LD A, R
+            a = r;
+            break;
+        case 0x60: // IN H, (C)
+            h = inputHandler(c);
+            break;
+        case 0x61: // OUT (C), H
+            outputHandler(h, c);
+            break;
+        case 0x62: // SBC HL, HL
+            temp = (uint16_t&)l | (h << 8);
+            alu(temp,temp, ALU_SBC16);
+            l = temp & 0xFF;
+            h = temp >> 8;
+            break;
+        case 0x67: // RRD
+            w = memory[fetchOperand() | (fetchOperand() << 8)];
+            memory[fetchOperand() | (fetchOperand() << 8)] = (w >> 4) | (w << 4);
+            break;
+        case 0x68: // IN L, (C)
+            l = inputHandler(c);
+            break;
+        case 0x69: // OUT (C), L
+            outputHandler(l, c);
+            break;
+        case 0x6A: // ADC HL, HL
+            temp = (uint16_t&)l | (h << 8);
+            alu(temp,temp, ALU_ADC16);
+            l = temp & 0xFF;
+            h = temp >> 8;
+            break;
+        case 0x6F: // RLD
+            w = memory[fetchOperand() | (fetchOperand() << 8)];
+            memory[fetchOperand() | (fetchOperand() << 8)] = (w << 4) | (w >> 4);
+            break;
+        default:
+            cout << "Invalid instruction: " << hex << (int)ins << endl;
             break;
     }
 }
