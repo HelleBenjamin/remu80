@@ -1041,7 +1041,8 @@ void Z80_Core::decode_execute() {
             }
             break;
         case 0xCB: //BIT INSTRUCTION
-            //TODO
+            w = fetchOperand();
+            ed_instruction(w);
             break;
         case 0xCC: // CALL Z, nn
             pc += 3;
@@ -1360,6 +1361,9 @@ void Z80_Core::decode_execute() {
             memory[sp] = pc & 0xFF; // low byte
             pc = 0x38;
             break;
+        default:
+            cout << "Invalid MAIN instruction: " << hex << (int)ins << endl;
+            break;
 
     }
 }
@@ -1530,7 +1534,38 @@ void Z80_Core::ed_instruction(uint8_t ins) {
         // TODO: IMPLEMENT REMAINING OPCODES
 
         default:
-            cout << "Invalid instruction: " << hex << (int)ins << endl;
+            cout << "Invalid MISC instruction: " << hex << (int)ins << endl;
             break;
+    }
+}
+
+void Z80_Core::cb_instruction(uint8_t ins) {
+    switch (ins) {
+        case 0x00: // RLC B
+            alu((uint16_t&)b, 0, ALU_RLC8);
+            break;
+        case 0x01: // RLC C
+            alu((uint16_t&)c, 0, ALU_RLC8);
+            break;
+        case 0x02: // RLC D
+            alu((uint16_t&)d, 0, ALU_RLC8);
+            break;
+        case 0x03: // RLC E
+            alu((uint16_t&)e, 0, ALU_RLC8);
+            break;
+        case 0x04: // RLC H
+            alu((uint16_t&)h, 0, ALU_RLC8);
+            break;
+        case 0x05: // RLC L
+            alu((uint16_t&)l, 0, ALU_RLC8);
+            break;
+        case 0x06: // RLC (HL)
+            alu((uint16_t&)memory[hla], 0, ALU_RLC8);
+            break;
+        case 0x07: // RLC A
+            alu((uint16_t&)a, 0, ALU_RLC8);
+            break;
+        default:
+            cout << "Invalid BIT instruction: " << hex << (int)ins << endl;
     }
 }
