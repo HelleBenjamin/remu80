@@ -67,6 +67,7 @@ void Z80_Core::reset() {
     halt = false;
     interrupts = true;
     isInput = false;
+    iff1, iff2 = true;
 }
 
 void Z80_Core::run() {
@@ -295,15 +296,31 @@ void Z80_Core::fetchInstruction() {
     //cout << "INS: " << ins << endl; // for debugging
 }
 
-uint8_t Z80_Core::inputHandler() {
+uint8_t Z80_Core::inputHandler(uint8_t port) {
     uint8_t input;
     scanf("%hhx", &input);
     return input;
 }
 
-uint8_t Z80_Core::outputHandler(uint8_t &reg) {
-    printf("%c", reg);
+uint8_t Z80_Core::outputHandler(uint8_t &reg, uint8_t port) {
+    switch (port) {
+        case 0x00: // stdout
+            printf("%c", reg);
+            break;
+        case 0x01: // debug
+            if (DEBUG) {
+                printInfo();
+            }
+            break;
+        default:
+            break;
+    }
+
     return reg;
+}
+
+void Z80_Core::interruptHandler() {
+    // TODO: implement interrupts
 }
 
 void Z80_Core::swapRegs(uint8_t& temp1, uint8_t& temp2) {
@@ -1068,8 +1085,8 @@ void Z80_Core::decode_execute() {
             }
             break;
         case 0xD3: // OUT (n), A
-            outputHandler(a);
-            fetchOperand();
+            w = fetchOperand();
+            outputHandler(a,w);
             break;
         case 0xD4: // CALL NC, nn
             pc += 3;
@@ -1124,8 +1141,8 @@ void Z80_Core::decode_execute() {
             }
             break;
         case 0xDB: // IN A, (n)
-            a = inputHandler();
-            fetchOperand();
+            w = fetchOperand();
+            a = inputHandler(w);
             break;
         case 0xDC: // CALL C, nn
             pc += 3;
@@ -1269,7 +1286,7 @@ void Z80_Core::decode_execute() {
             }
             break;
         case 0xF3: // DI
-            //TODO
+            iff1, iff2 = false;
             break;
         case 0xF4: // CALL P, nn
             pc += 3;
@@ -1313,7 +1330,7 @@ void Z80_Core::decode_execute() {
             }
             break;
         case 0xFB: // EI
-            //TODO
+            iff1, iff2 = true;
             break;
         case 0xFC: // CALL M, nn
             pc += 3;
@@ -1344,12 +1361,38 @@ void Z80_Core::decode_execute() {
 }
 
 void Z80_Core::ed_instruction(uint8_t ins) {
+    uint16_t temp, temp2 = 0;
     switch (ins) {
         case 0x40: // IN B, (C)
-            b = inputHandler();
+            b = inputHandler(c);
             break;
         case 0x41: // OUT (C), B
-            outputHandler(b);
+            outputHandler(b, c);
+            break;
+        case 0x42: // SBC HL, BC
+            temp = (uint16_t&)l | (h << 8);
+            temp2 = (uint16_t&)c | (b << 8);
+            alu(temp,temp2, ALU_SBC16);
+            l = temp & 0xFF;
+            h = temp >> 8;
+            break;
+        case 0x43: // LD (nn), BC
+            memory[fetchOperand() | (fetchOperand() << 8)] = c;
+            memory[fetchOperand() | (fetchOperand() << 8) + 1] = b;
+            break;
+        case 0x44: // NEG
+            a = -a;
+            break;
+        case 0x45: // RETN
+            // Add more functionality later when interrupts are better implemented
+            pc = memory[sp] | (memory[sp+1] << 8);
+            sp += 2;
+            break;
+        case 0x46: // IM 0
+            interrupts = false;
+            break;
+        case 0x47: // LD I, A
+            i = a;
             break;
     }
 }

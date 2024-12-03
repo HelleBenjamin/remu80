@@ -63,14 +63,18 @@ class Z80_Core {
         uint8_t a, b, c, d, e, h, l; // main registers, can be made to 16-bit register pairs
         uint16_t afa, bca, dea, hla; // alternate register pairs
         uint16_t ix, iy; // index registers
-        bool isInput;
+        uint8_t i, r; // interrupt and refresh register
+        bool iff1, iff2;
+
+        bool isInput; 
 
         void alu(uint16_t& op1, uint16_t& op2, uint8_t ins);
 
         uint8_t fetchOperand();
         void fetchInstruction();
-        uint8_t inputHandler();
-        uint8_t outputHandler(uint8_t &reg);
+        uint8_t inputHandler(uint8_t port);
+        uint8_t outputHandler(uint8_t &reg, uint8_t port);
+        void interruptHandler();
         void swapRegs(uint8_t& temp1, uint8_t& temp2);
         void decode_execute();
         void ed_instruction(uint8_t ins);
