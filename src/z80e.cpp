@@ -1565,6 +1565,30 @@ void Z80_Core::cb_instruction(uint8_t ins) {
         case 0x07: // RLC A
             alu((uint16_t&)a, 0, ALU_RLC8);
             break;
+        case 0x08: // RRC B
+            alu((uint16_t&)b, 0, ALU_RRC8);
+            break;
+        case 0x09: // RRC C
+            alu((uint16_t&)c, 0, ALU_RRC8);
+            break;
+        case 0x0A: // RRC D
+            alu((uint16_t&)d, 0, ALU_RRC8);
+            break;
+        case 0x0B: // RRC E
+            alu((uint16_t&)e, 0, ALU_RRC8);
+            break;
+        case 0x0C: // RRC H
+            alu((uint16_t&)h, 0, ALU_RRC8);
+            break;
+        case 0x0D: // RRC L
+            alu((uint16_t&)l, 0, ALU_RRC8);
+            break;
+        case 0x0E: // RRC (HL)
+            alu((uint16_t&)memory[hla], 0, ALU_RRC8);
+            break;
+        case 0x0F: // RRC A
+            alu((uint16_t&)a, 0, ALU_RRC8);
+            break;
         default:
             cout << "Invalid BIT instruction: " << hex << (int)ins << endl;
     }
