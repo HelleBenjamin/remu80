@@ -1503,6 +1503,27 @@ void Z80_Core::ed_instruction(uint8_t ins) {
             w = memory[fetchOperand() | (fetchOperand() << 8)];
             memory[fetchOperand() | (fetchOperand() << 8)] = (w << 4) | (w >> 4);
             break;
+        case 0x72: // SBC HL, SP
+            temp = (uint16_t&)l | (h << 8);
+            alu(temp, sp, ALU_SBC16);
+            l = temp & 0xFF;
+            h = temp >> 8;
+            break;
+        case 0x73: // LD (nn), SP
+            memory[fetchOperand() | (fetchOperand() << 8)] = (sp & 0xff);
+            memory[fetchOperand() | (fetchOperand() << 8) + 1] = (sp << 8);
+            break;
+        case 0x78: // IN A, (C)
+            a = inputHandler(c);
+            break;
+        case 0x79: // OUT (C), A
+            outputHandler(a,c);
+            break;
+        case 0x7A: // ADC HL, SP
+            temp = (uint16_t&)l | (h << 8);
+            alu(temp, sp, ALU_ADC16);
+            l = temp & 0xFF;
+            h = temp >> 8;   
         default:
             cout << "Invalid instruction: " << hex << (int)ins << endl;
             break;
