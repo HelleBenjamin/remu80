@@ -14,6 +14,13 @@
 
 #define MEMORY_SIZE 0xffff
 
+#define FLAG_C 0x01
+#define FLAG_N 0x02
+#define FLAG_P 0x04
+#define FLAG_H 0x20
+#define FLAG_Z 0x40
+#define FLAG_S 0x80
+
 
 #define ALU_ADD8 0x00
 #define ALU_ADD16 0x01
@@ -36,6 +43,14 @@
 #define ALU_SLA8 0x12
 #define ALU_SRA8 0x13
 #define ALU_SRL8 0x14
+#define ALU_BIT0 0x15
+#define ALU_BIT1 0x16
+#define ALU_BIT2 0x17
+#define ALU_BIT3 0x18
+#define ALU_BIT4 0x19
+#define ALU_BIT5 0x1A
+#define ALU_BIT6 0x1B
+#define ALU_BIT7 0x1C
 
 using namespace std;
 

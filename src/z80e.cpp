@@ -33,10 +33,11 @@ Z80_Core::Z80_Core() {
 }
 
 void Z80_Core::loadProgram(vector<uint8_t>& inputProgram) {
-    for (int i = 0; i < inputProgram.size(); i++) {
+    for (unsigned i = 0; i < inputProgram.size(); i++) {
         memory[i] = inputProgram[i];
     }
     cout << "Program loaded, " << inputProgram.size() << " bytes" << endl;
+
 }
 void Z80_Core::view_ram() {
     int addr1, addr2;
@@ -124,6 +125,14 @@ void Z80_Core::alu(uint16_t& op1, uint16_t op2, uint8_t ins){
         0x12, SLA reg
         0x13, SRA reg
         0x14, SRL reg
+        0x15, BIT 0, reg
+        0x16, BIT 1, reg
+        0x17, BIT 2, reg
+        0x18, BIT 3, reg
+        0x19, BIT 4, reg
+        0x1A, BIT 5, reg
+        0x1B, BIT 6, reg
+        0x1C, BIT 7, reg
     */
     bool bitShort = false; // false = 8-bit, true = 16-bit
     bool isCompare = false;
@@ -231,6 +240,46 @@ void Z80_Core::alu(uint16_t& op1, uint16_t op2, uint8_t ins){
             f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
             return;
             break;
+        case 0x15: // BIT 0, reg
+            f = (op1 & 0x01) ? (f | 0x40) : (f & ~0x40);
+            f |= FLAG_H;
+            return;
+            break;
+        case 0x16: // BIT 1, reg
+            f = (op1 & 0x02) ? (f | 0x40) : (f & ~0x40);
+            f |= FLAG_H;
+            return;
+            break;
+        case 0x17: // BIT 2, reg
+            f = (op1 & 0x04) ? (f | 0x40) : (f & ~0x40);
+            f |= FLAG_H;
+            return;
+            break;
+        case 0x18: // BIT 3, reg
+            f = (op1 & 0x08) ? (f | 0x40) : (f & ~0x40);
+            f |= FLAG_H;
+            return;
+            break;
+        case 0x19: // BIT 4, reg
+            f = (op1 & 0x10) ? (f | 0x40) : (f & ~0x40);
+            f |= FLAG_H;
+            return;
+            break;
+        case 0x1A: // BIT 5, reg
+            f = (op1 & 0x20) ? (f | 0x40) : (f & ~0x40);
+            f |= FLAG_H;
+            return;
+            break;
+        case 0x1B: // BIT 6, reg
+            f = (op1 & 0x40) ? (f | 0x40) : (f & ~0x40);
+            f |= FLAG_H;
+            return;
+            break;
+        case 0x1C: // BIT 7, reg
+            f = (op1 & 0x80) ? (f | 0x40) : (f & ~0x40);
+            f |= FLAG_H;
+            return;
+            break;
         default:
             cout << "Invalid ALU instruction: " << hex << ins << endl;
     }
@@ -334,6 +383,7 @@ uint16_t Z80_Core::convToRegPair(uint8_t l, uint8_t h) {
 }
 
 void Z80_Core::decode_execute() {
+    int8_t raddr = 0; // relative address, used for relative jumps
     switch (ins) {
         case 0x00: // NOP
             break;
@@ -367,8 +417,8 @@ void Z80_Core::decode_execute() {
         case 0x08: // EX AF, AF'
             w = (uint8_t)(afa << 8);
             swapRegs(a, w);
-            w = (uint8_t)(afa & 0xff);
-            swapRegs(f, w);
+            z = (uint8_t)(afa & 0xff);
+            swapRegs(f, z);
             break;
         case 0x09: // ADD HL, BC
             acc = (h << 8 | l) + (c << 8 | b);
@@ -434,7 +484,8 @@ void Z80_Core::decode_execute() {
             alu((uint16_t&)a, (uint16_t&)f, ALU_RL8);
             break;
         case 0x18: // JR n
-            pc = pc + fetchOperand();
+            raddr = (int8_t)fetchOperand();
+            pc = pc + raddr;
             break;
         case 0x19: // ADD HL, DE
             acc = (h << 8 | l) + (e << 8 | d);
@@ -467,8 +518,9 @@ void Z80_Core::decode_execute() {
             alu((uint16_t&)a, (uint16_t&)f, ALU_RR8);
             break;
         case 0x20: // JR NZ, n
-            if (!(f & 0x40)){
-                pc = pc + fetchOperand();
+            if (!(f & FLAG_Z)){
+                raddr = (int8_t)fetchOperand();
+                pc = pc + raddr;
             }
             break;
         case 0x21: // LD HL, nn
@@ -500,8 +552,9 @@ void Z80_Core::decode_execute() {
             //TODO
             break;
         case 0x28: // JR Z, n
-            if (f & 0x40) {
-                pc = pc + fetchOperand();
+            if (f & FLAG_Z) {
+                raddr = (int8_t)fetchOperand();
+                pc = pc + raddr;
             }
             break;
         case 0x29: // ADD HL, HL
@@ -537,8 +590,9 @@ void Z80_Core::decode_execute() {
             f ^= (1 << 4) | (1 << 1);
             break;
         case 0x30: // JR NC, n
-            if (!(f & 0x01)) {
-                pc = pc + fetchOperand();
+            if (!(f & FLAG_C)) {
+                raddr = (int8_t)fetchOperand();
+                pc = pc + raddr;
             }
             break;
         case 0x31: // LD SP, nn
@@ -565,8 +619,9 @@ void Z80_Core::decode_execute() {
             f |= 1;
             break;
         case 0x38: // JR C, n
-            if (f & 0x01) {
-                pc = pc + fetchOperand();
+            if (f & FLAG_C) {
+                raddr = (int8_t)fetchOperand();
+                pc = pc + raddr;
             }
             break;
         case 0x39: // ADD HL, SP
@@ -1036,7 +1091,7 @@ void Z80_Core::decode_execute() {
             sp += 2;
             break;
         case 0xCA: // JP Z, nn
-            if(f & 0x40){
+            if(f & FLAG_Z){
                 pc = (fetchOperand() | (fetchOperand() << 8));
             }
             break;
@@ -1560,7 +1615,7 @@ void Z80_Core::cb_instruction(uint8_t ins) {
             alu((uint16_t&)l, 0, ALU_RLC8);
             break;
         case 0x06: // RLC (HL)
-            alu((uint16_t&)memory[hla], 0, ALU_RLC8);
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_RLC8);
             break;
         case 0x07: // RLC A
             alu((uint16_t&)a, 0, ALU_RLC8);
@@ -1584,7 +1639,7 @@ void Z80_Core::cb_instruction(uint8_t ins) {
             alu((uint16_t&)l, 0, ALU_RRC8);
             break;
         case 0x0E: // RRC (HL)
-            alu((uint16_t&)memory[hla], 0, ALU_RRC8);
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_RRC8);
             break;
         case 0x0F: // RRC A
             alu((uint16_t&)a, 0, ALU_RRC8);
@@ -1608,7 +1663,7 @@ void Z80_Core::cb_instruction(uint8_t ins) {
             alu((uint16_t&)l, 0, ALU_RL8);
             break;
         case 0x16: // RL (HL)
-            alu((uint16_t&)memory[hla], 0, ALU_RL8);
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_RL8);
             break;
         case 0x17: // RL A
             alu((uint16_t&)a, 0, ALU_RL8);
@@ -1632,11 +1687,85 @@ void Z80_Core::cb_instruction(uint8_t ins) {
             alu((uint16_t&)l, 0, ALU_RR8);
             break;
         case 0x1E: // RR (HL)
-            alu((uint16_t&)memory[hla], 0, ALU_RR8);
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_RR8);
             break;
         case 0x1F: // RR A
             alu((uint16_t&)a, 0, ALU_RR8);
             break;
+        case 0x20: // SLA B
+            alu((uint16_t&)b, 0, ALU_SLA8);
+            break;
+        case 0x21: // SLA C
+            alu((uint16_t&)c, 0, ALU_SLA8);
+            break;
+        case 0x22: // SLA D
+            alu((uint16_t&)d, 0, ALU_SLA8);
+            break;
+        case 0x23: // SLA E
+            alu((uint16_t&)e, 0, ALU_SLA8);
+            break;
+        case 0x24: // SLA H
+            alu((uint16_t&)h, 0, ALU_SLA8);
+            break;
+        case 0x25: // SLA L
+            alu((uint16_t&)l, 0, ALU_SLA8);
+            break;
+        case 0x26: // SLA (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_SLA8);
+            break;
+        case 0x27: // SLA A
+            alu((uint16_t&)a, 0, ALU_SLA8);
+            break;
+        case 0x28: // SRA B
+            alu((uint16_t&)b, 0, ALU_SRA8);
+            break;
+        case 0x29: // SRA C
+            alu((uint16_t&)c, 0, ALU_SRA8);
+            break;
+        case 0x2A: // SRA D
+            alu((uint16_t&)d, 0, ALU_SRA8);
+            break;
+        case 0x2B: // SRA E
+            alu((uint16_t&)e, 0, ALU_SRA8);
+            break;
+        case 0x2C: // SRA H
+            alu((uint16_t&)h, 0, ALU_SRA8);
+            break;
+        case 0x2D: // SRA L
+            alu((uint16_t&)l, 0, ALU_SRA8);
+            break;
+        case 0x2E: // SRA (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_SRA8);
+            break;
+        case 0x2F: // SRA A
+            alu((uint16_t&)a, 0, ALU_SRA8);
+            break;
+        case 0x38: // SRL B
+            alu((uint16_t&)b, 0, ALU_SRL8);
+            break;
+        case 0x39: // SRL C
+            alu((uint16_t&)c, 0, ALU_SRL8);
+            break;
+        case 0x3A: // SRL D
+            alu((uint16_t&)d, 0, ALU_SRL8);
+            break;
+        case 0x3B: // SRL E
+            alu((uint16_t&)e, 0, ALU_SRL8);
+            break;
+        case 0x3C: // SRL H
+            alu((uint16_t&)h, 0, ALU_SRL8);
+            break;
+        case 0x3D: // SRL L
+            alu((uint16_t&)l, 0, ALU_SRL8);
+            break;
+        case 0x3E: // SRL (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_SRL8);
+            break;
+        case 0x3F: // SRL A
+            alu((uint16_t&)a, 0, ALU_SRL8);
+            break;
+        case 0x40: // BIT 0, B
+            alu((uint16_t&)b, 0, ALU_BIT0);
         default:
             cout << "Invalid BIT instruction: " << hex << (int)ins << endl;
     }
