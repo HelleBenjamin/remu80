@@ -1,7 +1,13 @@
+#include <stdexcept>
+#include <string>
+#include <vector>
+#include <fstream>
+#include <algorithm>
+
 #include "../include/loadHex.h"
 
 uint8_t hexToByte(const string& hex) { 
-    return static_cast<uint8_t>(stoi(hex, nullptr, 16));
+    return static_cast<uint8_t>(std::stoul(hex, nullptr, 16));
 }
 vector<uint8_t> loadHexToVector(const string& filename) {
     ifstream file(filename);

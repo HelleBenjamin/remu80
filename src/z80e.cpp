@@ -25,7 +25,261 @@ vector<uint8_t> program;
 map<uint8_t, string> Opcodes = {
     {0x00, "NOP"},
     {0x01, "LD BC, nn"},
-}; // TODO: add all opcodes
+    {0x02, "LD (BC), A"},
+    {0x03, "INC BC"},
+    {0x04, "INC B"},
+    {0x05, "DEC B"},
+    {0x06, "LD B, n"},
+    {0x07, "RLCA"},
+    {0x08, "EX AF, AF'"},
+    {0x09, "ADD HL, BC"},
+    {0x0A, "LD A, (BC)"},
+    {0x0B, "DEC BC"},
+    {0x0C, "INC C"},
+    {0x0D, "DEC C"},
+    {0x0E, "LD C, n"},
+    {0x0F, "RRCA"},
+    {0x10, "DJNZ e"},
+    {0x11, "LD DE, nn"},
+    {0x12, "LD (DE), A"},
+    {0x13, "INC DE"},
+    {0x14, "INC D"},
+    {0x15, "DEC D"},
+    {0x16, "LD D, n"},
+    {0x17, "RLA"},
+    {0x18, "JR e"},
+    {0x19, "ADD HL, DE"},
+    {0x1A, "LD A, (DE)"},
+    {0x1B, "DEC DE"},
+    {0x1C, "INC E"},
+    {0x1D, "DEC E"},
+    {0x1E, "LD E, n"},
+    {0x1F, "RRA"},
+    {0x20, "JR NZ, e"},
+    {0x21, "LD HL, nn"},
+    {0x22, "LD (nn), HL"},
+    {0x23, "INC HL"},
+    {0x24, "INC H"},
+    {0x25, "DEC H"},
+    {0x26, "LD H, n"},
+    {0x27, "DAA"},
+    {0x28, "JR Z, e"},
+    {0x29, "ADD HL, HL"},
+    {0x2A, "LD HL, (nn)"},
+    {0x2B, "DEC HL"},
+    {0x2C, "INC L"},
+    {0x2D, "DEC L"},
+    {0x2E, "LD L, n"},
+    {0x2F, "CPL"},
+    {0x30, "JR NC, e"},
+    {0x31, "LD SP, nn"},
+    {0x32, "LD (nn), A"},
+    {0x33, "INC SP"},
+    {0x34, "INC (HL)"},
+    {0x35, "DEC (HL)"},
+    {0x36, "LD (HL), n"},
+    {0x37, "SCF"},
+    {0x38, "JR C, e"},
+    {0x39, "ADD HL, SP"},
+    {0x3A, "LD A, (nn)"},
+    {0x3B, "DEC SP"},
+    {0x3C, "INC A"},
+    {0x3D, "DEC A"},
+    {0x3E, "LD A, n"},
+    {0x3F, "CCF"},
+    {0x40, "LD B, B"},
+    {0x41, "LD B, C"},
+    {0x42, "LD B, D"},
+    {0x43, "LD B, E"},
+    {0x44, "LD B, H"},
+    {0x45, "LD B, L"},
+    {0x46, "LD B, (HL)"},
+    {0x47, "LD B, A"},
+    {0x48, "LD C, B"},
+    {0x49, "LD C, C"},
+    {0x4A, "LD C, D"},
+    {0x4B, "LD C, E"},
+    {0x4C, "LD C, H"},
+    {0x4D, "LD C, L"},
+    {0x4E, "LD C, (HL)"},
+    {0x4F, "LD C, A"},
+    {0x50, "LD D, B"},
+    {0x51, "LD D, C"},
+    {0x52, "LD D, D"},
+    {0x53, "LD D, E"},
+    {0x54, "LD D, H"},
+    {0x55, "LD D, L"},
+    {0x56, "LD D, (HL)"},
+    {0x57, "LD D, A"},
+    {0x58, "LD E, B"},
+    {0x59, "LD E, C"},
+    {0x5A, "LD E, D"},
+    {0x5B, "LD E, E"},
+    {0x5C, "LD E, H"},
+    {0x5D, "LD E, L"},
+    {0x5E, "LD E, (HL)"},
+    {0x5F, "LD E, A"},
+    {0x60, "LD H, B"},
+    {0x61, "LD H, C"},
+    {0x62, "LD H, D"},
+    {0x63, "LD H, E"},
+    {0x64, "LD H, H"},
+    {0x65, "LD H, L"},
+    {0x66, "LD H, (HL)"},
+    {0x67, "LD H, A"},
+    {0x68, "LD L, B"},
+    {0x69, "LD L, C"},
+    {0x6A, "LD L, D"},
+    {0x6B, "LD L, E"},
+    {0x6C, "LD L, H"},
+    {0x6D, "LD L, L"},
+    {0x6E, "LD L, (HL)"},
+    {0x6F, "LD L, A"},
+    {0x70, "LD (HL), B"},
+    {0x71, "LD (HL), C"},
+    {0x72, "LD (HL), D"},
+    {0x73, "LD (HL), E"},
+    {0x74, "LD (HL), H"},
+    {0x75, "LD (HL), L"},
+    {0x76, "HALT"},
+    {0x77, "LD (HL), A"},
+    {0x78, "LD A, B"},
+    {0x79, "LD A, C"},
+    {0x7A, "LD A, D"},
+    {0x7B, "LD A, E"},
+    {0x7C, "LD A, H"},
+    {0x7D, "LD A, L"},
+    {0x7E, "LD A, (HL)"},
+    {0x7F, "LD A, A"},
+    {0x80, "ADD A, B"},
+    {0x81, "ADD A, C"},
+    {0x82, "ADD A, D"},
+    {0x83, "ADD A, E"},
+    {0x84, "ADD A, H"},
+    {0x85, "ADD A, L"},
+    {0x86, "ADD A, (HL)"},
+    {0x87, "ADD A, A"},
+    {0x88, "ADC A, B"},
+    {0x89, "ADC A, C"},
+    {0x8A, "ADC A, D"},
+    {0x8B, "ADC A, E"},
+    {0x8C, "ADC A, H"},
+    {0x8D, "ADC A, L"},
+    {0x8E, "ADC A, (HL)"},
+    {0x8F, "ADC A, A"},
+    {0x90, "SUB B"},
+    {0x91, "SUB C"},
+    {0x92, "SUB D"},
+    {0x93, "SUB E"},
+    {0x94, "SUB H"},
+    {0x95, "SUB L"},
+    {0x96, "SUB (HL)"},
+    {0x97, "SUB A"},
+    {0x98, "SBC A, B"},
+    {0x99, "SBC A, C"},
+    {0x9A, "SBC A, D"},
+    {0x9B, "SBC A, E"},
+    {0x9C, "SBC A, H"},
+    {0x9D, "SBC A, L"},
+    {0x9E, "SBC A, (HL)"},
+    {0x9F, "SBC A, A"},
+    {0xA0, "AND B"},
+    {0xA1, "AND C"},
+    {0xA2, "AND D"},
+    {0xA3, "AND E"},
+    {0xA4, "AND H"},
+    {0xA5, "AND L"},
+    {0xA6, "AND (HL)"},
+    {0xA7, "AND A"},
+    {0xA8, "XOR B"},
+    {0xA9, "XOR C"},
+    {0xAA, "XOR D"},
+    {0xAB, "XOR E"},
+    {0xAC, "XOR H"},
+    {0xAD, "XOR L"},
+    {0xAE, "XOR (HL)"},
+    {0xAF, "XOR A"},
+    {0xB0, "OR B"},
+    {0xB1, "OR C"},
+    {0xB2, "OR D"},
+    {0xB3, "OR E"},
+    {0xB4, "OR H"},
+    {0xB5, "OR L"},
+    {0xB6, "OR (HL)"},
+    {0xB7, "OR A"},
+    {0xB8, "CP B"},
+    {0xB9, "CP C"},
+    {0xBA, "CP D"},
+    {0xBB, "CP E"},
+    {0xBC, "CP H"},
+    {0xBD, "CP L"},
+    {0xBE, "CP (HL)"},
+    {0xBF, "CP A"},
+    {0xC0, "RET NZ"},
+    {0xC1, "POP BC"},
+    {0xC2, "JP NZ, nn"},
+    {0xC3, "JP nn"},
+    {0xC4, "CALL NZ, nn"},
+    {0xC5, "PUSH BC"},
+    {0xC6, "ADD A, n"},
+    {0xC7, "RST 00H"},
+    {0xC8, "RET Z"},
+    {0xC9, "RET"},
+    {0xCA, "JP Z, nn"},
+    {0xCB, "PREFIX CB"},
+    {0xCC, "CALL Z, nn"},
+    {0xCD, "CALL nn"},
+    {0xCE, "ADC A, n"},
+    {0xCF, "RST 08H"},
+    {0xD0, "RET NC"},
+    {0xD1, "POP DE"},
+    {0xD2, "JP NC, nn"},
+    {0xD3, "OUT (n), A"},
+    {0xD4, "CALL NC, nn"},
+    {0xD5, "PUSH DE"},
+    {0xD6, "SUB n"},
+    {0xD7, "RST 10H"},
+    {0xD8, "RET C"},
+    {0xD9, "EXX"},
+    {0xDA, "JP C, nn"},
+    {0xDB, "IN A, (n)"},
+    {0xDC, "CALL C, nn"},
+    {0xDD, "PREFIX DD"},
+    {0xDE, "SBC A, n"},
+    {0xDF, "RST 18H"},
+    {0xE0, "RET PO"},
+    {0xE1, "POP HL"},
+    {0xE2, "JP PO, nn"},
+    {0xE3, "EX (SP), HL"},
+    {0xE4, "CALL PO, nn"},
+    {0xE5, "PUSH HL"},
+    {0xE6, "AND n"},
+    {0xE7, "RST 20H"},
+    {0xE8, "RET PE"},
+    {0xE9, "JP (HL)"},
+    {0xEA, "JP PE, nn"},
+    {0xEB, "EX DE, HL"},
+    {0xEC, "CALL PE, nn"},
+    {0xED, "PREFIX ED"},
+    {0xEE, "XOR n"},
+    {0xEF, "RST 28H"},
+    {0xF0, "RET P"},
+    {0xF1, "POP AF"},
+    {0xF2, "JP P, nn"},
+    {0xF3, "DI"},
+    {0xF4, "CALL P, nn"},
+    {0xF5, "PUSH AF"},
+    {0xF6, "OR n"},
+    {0xF7, "RST 30H"},
+    {0xF8, "RET M"},
+    {0xF9, "LD SP, HL"},
+    {0xFA, "JP M, nn"},
+    {0xFB, "EI"},
+    {0xFC, "CALL M, nn"},
+    {0xFD, "PREFIX FD"},
+    {0xFE, "CP n"},
+    {0xFF, "RST 38H"}
+};
 
 
 Z80_Core::Z80_Core() {
@@ -55,7 +309,7 @@ void Z80_Core::view_program() {
     }
     system("pause");
 }
-
+vector<uint8_t> ExecutedInstructions;
 
 void Z80_Core::reset() {
     a = b = c = d = e = h = l = 0;
@@ -66,7 +320,6 @@ void Z80_Core::reset() {
     acc = 0;
     f = 0;
     halt = false;
-    interrupts = true;
     isInput = false;
     iff1, iff2 = false;
 }
@@ -74,15 +327,22 @@ void Z80_Core::reset() {
 void Z80_Core::run() {
     reset();
     pc = 0;
+    uint8_t opcode;
     while (!halt) {
-        fetchInstruction();
-        decode_execute();
+        opcode = fetchOperand();
+        decode_execute(opcode);
         //Sleep(10);
     }
     if (DEBUG) {
         printInfo();
+        cout << "Executed " << ExecutedInstructions.size() << " instructions:" << endl;
+        for (int i = 0; i < ExecutedInstructions.size(); i++) { // print executed instructions
+            cout << Opcodes[ExecutedInstructions[i]] << endl;
+        }
     }
 }
+
+
 
 void Z80_Core::printCurrentState() {
     cout << "PC: " << pc << " SP: " << sp << " F: " << bitset<8>(f) << endl;
@@ -382,9 +642,11 @@ uint16_t Z80_Core::convToRegPair(uint8_t l, uint8_t h) {
     return (uint16_t)l | (h << 8);
 }
 
-void Z80_Core::decode_execute() {
+void Z80_Core::decode_execute(uint8_t instruction) {
     int8_t raddr = 0; // relative address, used for relative jumps
-    switch (ins) {
+    uint16_t temp, temp2 = 0;
+    ExecutedInstructions.push_back(instruction);
+    switch (instruction) {
         case 0x00: // NOP
             break;
         case 0x01: // LD BC, nn
@@ -392,7 +654,7 @@ void Z80_Core::decode_execute() {
             b = fetchOperand();
             break;
         case 0x02: // LD (BC), A
-            memory[b | (c << 8)] = a;
+            memory[c | (b << 8)] = a;
             break;
         case 0x03: // INC BC
             if (c == 0xFF) {
@@ -421,15 +683,14 @@ void Z80_Core::decode_execute() {
             swapRegs(f, z);
             break;
         case 0x09: // ADD HL, BC
-            acc = (h << 8 | l) + (c << 8 | b);
-            if (acc > 65535) {
-                f |= 0x01;
-            }
-            h = acc >> 8;
-            l = acc & 0xff;
+            temp = (uint16_t&)l | (h << 8);
+            temp2 = (uint16_t&)c | (b << 8);
+            alu(temp,temp2, ALU_ADC16);
+            l = temp & 0xFF;
+            h = temp >> 8;
             break;
         case 0x0A: // LD A, (BC)
-            a = memory[b | (c << 8)];
+            a = memory[c | (b << 8)];
             break;
         case 0x0B: // DEC BC
             if (b == 0) {
@@ -461,7 +722,7 @@ void Z80_Core::decode_execute() {
             d = fetchOperand();
             break;
         case 0x12: // LD (DE), A
-            memory[d | (e << 8)] = a;
+            memory[e | (d << 8)] = a;
             break;
         case 0x13: // INC DE
             if (e == 0xFF) {
@@ -488,15 +749,14 @@ void Z80_Core::decode_execute() {
             pc = pc + raddr;
             break;
         case 0x19: // ADD HL, DE
-            acc = (h << 8 | l) + (e << 8 | d);
-            if (acc > 65535) {
-                f |= 0x01;
-            }
-            h = acc >> 8;
-            l = acc & 0xff;
+            temp = (uint16_t&)l | (h << 8);
+            temp2 = (uint16_t&)e | (d << 8);
+            alu(temp,temp2, ALU_ADC16);
+            l = temp & 0xFF;
+            h = temp >> 8;
             break;
         case 0x1A: // LD A, (DE)
-            a = memory[d | (e << 8)];
+            a = memory[e | (d << 8)];
             break;
         case 0x1B: // DEC DE
             if (d == 0) {
@@ -558,12 +818,11 @@ void Z80_Core::decode_execute() {
             }
             break;
         case 0x29: // ADD HL, HL
-            acc = (h << 8 | l) + (h << 8 | l);
-            if (acc > 65535) {
-                f |= 0x01;
-            }
-            h = acc >> 8;
-            l = acc & 0xff;
+            temp = (uint16_t&)l | (h << 8);
+            temp2 = (uint16_t&)l | (h << 8);
+            alu(temp,temp2, ALU_ADC16);
+            l = temp & 0xFF;
+            h = temp >> 8;
             break;
         case 0x2A: // LD HL, (nn)
             l = memory[fetchOperand() | (fetchOperand() << 8)];
@@ -1036,8 +1295,10 @@ void Z80_Core::decode_execute() {
             break;
         case 0xC0: // RET NZ
             if (!(f & 0x40)) {
-                pc = memory[sp] | (memory[sp+1] << 8);
-                sp += 2;
+                w = memory[sp]; // high byte
+                sp++;
+                z = memory[sp]; // low byte
+                pc = z | (w << 8);
             }
             break;
         case 0xC1: // POP BC
@@ -1075,20 +1336,24 @@ void Z80_Core::decode_execute() {
             break;
         case 0xC7: // RST 00h
             sp--;
-            memory[sp] = pc >> 8; // high byte
-            sp--;
             memory[sp] = pc & 0xFF; // low byte
+            sp--;
+            memory[sp] = pc >> 8; // high byte
             pc = 0x00;
             break;
         case 0xC8: // RET Z
-            if(f & 0x40){
-                pc = memory[sp] | (memory[sp+1] << 8);
-                sp += 2;
+            if(f & FLAG_Z){
+                w = memory[sp]; // high byte
+                sp++;
+                z = memory[sp]; // low byte
+                pc = z | (w << 8);
             }
             break;
         case 0xC9: // RET
-            pc = memory[sp] | (memory[sp+1] << 8);
-            sp += 2;
+            w = memory[sp]; // high byte
+            sp++;
+            z = memory[sp]; // low byte
+            pc = z | (w << 8);
             break;
         case 0xCA: // JP Z, nn
             if(f & FLAG_Z){
@@ -1100,22 +1365,24 @@ void Z80_Core::decode_execute() {
             ed_instruction(w);
             break;
         case 0xCC: // CALL Z, nn
-            pc += 3;
             if(f & 0x40){
                 sp--;
-                memory[sp] = pc >> 8; // high byte
-                sp--;
                 memory[sp] = pc & 0xFF; // low byte
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                sp--;
+                memory[sp] = pc >> 8; // high byte
+                w = fetchOperand(); // low byte
+                z = fetchOperand(); // high byte
+                pc = (w | (z << 8));
             }
             break;
         case 0xCD: // CALL nn
-            pc += 3;
-            sp--;
-            memory[sp] = pc >> 8; // high byte
             sp--;
             memory[sp] = pc & 0xFF; // low byte
-            pc = (fetchOperand() | (fetchOperand() << 8));
+            sp--;
+            memory[sp] = pc >> 8; // high byte
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
+            pc = (w | (z << 8));
             break;
         case 0xCE: // ADC A, n
             w = fetchOperand();
@@ -1123,15 +1390,17 @@ void Z80_Core::decode_execute() {
             break;
         case 0xCF: // RST 08h
             sp--;
-            memory[sp] = pc >> 8; // high byte
-            sp--;
             memory[sp] = pc & 0xFF; // low byte
+            sp--;
+            memory[sp] = pc >> 8; // high byte
             pc = 0x08;
             break;
         case 0xD0: // RET NC
             if(!(f & 0x01)){
-                pc = memory[sp] | (memory[sp+1] << 8);
-                sp += 2;
+                w = memory[sp]; // high byte
+                sp++;
+                z = memory[sp]; // low byte
+                pc = z | (w << 8);
             }
             break;
         case 0xD1: // POP DE
@@ -1149,13 +1418,14 @@ void Z80_Core::decode_execute() {
             outputHandler(a,w);
             break;
         case 0xD4: // CALL NC, nn
-            pc += 3;
             if(!(f & 0x01)){
                 sp--;
-                memory[sp] = pc >> 8; // high byte
-                sp--;
                 memory[sp] = pc & 0xFF; // low byte
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                sp--;
+                memory[sp] = pc >> 8; // high byte
+                w = fetchOperand(); // low byte
+                z = fetchOperand(); // high byte
+                pc = (w | (z << 8));
             }
             break;
         case 0xD5: // PUSH DE
@@ -1170,15 +1440,17 @@ void Z80_Core::decode_execute() {
             break;
         case 0xD7: // RST 10h
             sp--;
-            memory[sp] = pc >> 8; // high byte
-            sp--;
             memory[sp] = pc & 0xFF; // low byte
+            sp--;
+            memory[sp] = pc >> 8; // high byte
             pc = 0x10;
             break;
         case 0xD8: // RET C
             if(f & 0x01){
-                pc = memory[sp] | (memory[sp+1] << 8);
-                sp += 2;
+                w = memory[sp]; // high byte
+                sp++;
+                z = memory[sp]; // low byte
+                pc = z | (w << 8);
             }
             break;
         case 0xD9: // EXX
@@ -1205,17 +1477,18 @@ void Z80_Core::decode_execute() {
             a = inputHandler(w);
             break;
         case 0xDC: // CALL C, nn
-            pc += 3;
             if(f & 0x01){
                 sp--;
-                memory[sp] = pc >> 8; // high byte
-                sp--;
                 memory[sp] = pc & 0xFF; // low byte
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                sp--;
+                memory[sp] = pc >> 8; // high byte
+                w = fetchOperand(); // low byte
+                z = fetchOperand(); // high byte
+                pc = (w | (z << 8));
             }
             break;
         case 0xDD: // IX PREFIX
-            //TODO
+            cout << "IX PREFIX NOT IMPLEMENTED" << endl;
             break;
         case 0xDE: // SBC A, n
             w = fetchOperand();
@@ -1223,15 +1496,17 @@ void Z80_Core::decode_execute() {
             break;
         case 0xDF: // RST 18h
             sp--;
-            memory[sp] = pc >> 8; // high byte
-            sp--;
             memory[sp] = pc & 0xFF; // low byte
+            sp--;
+            memory[sp] = pc >> 8; // high byte
             pc = 0x18;
             break;
         case 0xE0: // RET PO
             if(!(f & 0x04)){
-                pc = memory[sp] | (memory[sp+1] << 8);
-                sp += 2;
+                w = memory[sp]; // high byte
+                sp++;
+                z = memory[sp]; // low byte
+                pc = z | (w << 8);
             }
             break;
         case 0xE1: // POP HL
@@ -1254,13 +1529,14 @@ void Z80_Core::decode_execute() {
             h = z;
             break;
         case 0xE4: // CALL PO, nn
-            pc += 3;
             if(!(f & 0x04)){
                 sp--;
-                memory[sp] = pc >> 8; // high byte
-                sp--;
                 memory[sp] = pc & 0xFF; // low byte
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                sp--;
+                memory[sp] = pc >> 8; // high byte
+                w = fetchOperand(); // low byte
+                z = fetchOperand(); // high byte
+                pc = (w | (z << 8));
             }
             break;
         case 0xE5: // PUSH HL
@@ -1275,15 +1551,17 @@ void Z80_Core::decode_execute() {
             break;
         case 0xE7: // RST 20h
             sp--;
-            memory[sp] = pc >> 8; // high byte
-            sp--;
             memory[sp] = pc & 0xFF; // low byte
+            sp--;
+            memory[sp] = pc >> 8; // high byte
             pc = 0x20;
             break;
         case 0xE8: // RET PE
             if(!(f & 0x04)){
-                pc = memory[sp] | (memory[sp+1] << 8);
-                sp += 2;
+                w = memory[sp]; // high byte
+                sp++;
+                z = memory[sp]; // low byte
+                pc = z | (w << 8);
             }
             break;
         case 0xE9: // JP (HL)
@@ -1305,13 +1583,14 @@ void Z80_Core::decode_execute() {
             swapRegs (l, w);
             break;
         case 0xEC: // CALL PE, nn
-            pc += 3;
             if((f & 0x04)){
                 sp--;
-                memory[sp] = pc >> 8; // high byte
-                sp--;
                 memory[sp] = pc & 0xFF; // low byte
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                sp--;
+                memory[sp] = pc >> 8; // high byte
+                w = fetchOperand(); // low byte
+                z = fetchOperand(); // high byte
+                pc = (w | (z << 8));
             }
             break;
         case 0xED: // ED PREFIX
@@ -1324,15 +1603,17 @@ void Z80_Core::decode_execute() {
             break;
         case 0xEF: // RST 28h
             sp--;
-            memory[sp] = pc >> 8; // high byte
-            sp--;
             memory[sp] = pc & 0xFF; // low byte
+            sp--;
+            memory[sp] = pc >> 8; // high byte
             pc = 0x28;
             break;
         case 0xF0: // RET P
             if(!(f & 0x80)){
-                pc = memory[sp] | (memory[sp+1] << 8);
-                sp += 2;
+                w = memory[sp]; // high byte
+                sp++;
+                z = memory[sp]; // low byte
+                pc = z | (w << 8);
             }
             break;
         case 0xF1: // POP AF
@@ -1349,13 +1630,14 @@ void Z80_Core::decode_execute() {
             iff1, iff2 = false;
             break;
         case 0xF4: // CALL P, nn
-            pc += 3;
             if(!(f & 0x80)){
                 sp--;
-                memory[sp] = pc >> 8; // high byte
-                sp--;
                 memory[sp] = pc & 0xFF; // low byte
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                sp--;
+                memory[sp] = pc >> 8; // high byte
+                w = fetchOperand(); // low byte
+                z = fetchOperand(); // high byte
+                pc = (w | (z << 8));
             }
             break;
         case 0xF5: // PUSH AF
@@ -1370,15 +1652,17 @@ void Z80_Core::decode_execute() {
             break;
         case 0xF7: // RST 30h
             sp--;
-            memory[sp] = pc >> 8; // high byte
-            sp--;
             memory[sp] = pc & 0xFF; // low byte
+            sp--;
+            memory[sp] = pc >> 8; // high byte
             pc = 0x30;
             break;
         case 0xF8: // RET M
             if(!(f & 0x80)){
-                pc = memory[sp] | (memory[sp+1] << 8);
-                sp += 2;
+                w = memory[sp]; // high byte
+                sp++;
+                z = memory[sp]; // low byte
+                pc = z | (w << 8);
             }
             break;
         case 0xF9: // LD SP, HL
@@ -1393,17 +1677,18 @@ void Z80_Core::decode_execute() {
             iff1, iff2 = true;
             break;
         case 0xFC: // CALL M, nn
-            pc += 3;
             if((f & 0x80)){
                 sp--;
-                memory[sp] = pc >> 8; // high byte
-                sp--;
                 memory[sp] = pc & 0xFF; // low byte
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                sp--;
+                memory[sp] = pc >> 8; // high byte
+                w = fetchOperand(); // low byte
+                z = fetchOperand(); // high byte
+                pc = (w | (z << 8));
             }
             break;
         case 0xFD: // IY PREFIX
-            //TODO
+            cout << "IY PREFIX NOT IMPLEMENTED" << endl;
             break;
         case 0xFE: // CP n
             w = fetchOperand();
@@ -1411,9 +1696,9 @@ void Z80_Core::decode_execute() {
             break;
         case 0xFF: // RST 38h
             sp--;
-            memory[sp] = pc >> 8; // high byte
-            sp--;
             memory[sp] = pc & 0xFF; // low byte
+            sp--;
+            memory[sp] = pc >> 8; // high byte
             pc = 0x38;
             break;
         default:
@@ -1448,8 +1733,10 @@ void Z80_Core::ed_instruction(uint8_t ins) {
             break;
         case 0x45: // RETN
             // Add more functionality later when interrupts are better implemented
-            pc = memory[sp] | (memory[sp+1] << 8);
-            sp += 2;
+            w = memory[sp]; // high byte
+            sp++;
+            z = memory[sp]; // low byte
+            pc = z | (w << 8);
             iff1 = iff2;
             break;
         case 0x46: // IM 0
@@ -1477,7 +1764,10 @@ void Z80_Core::ed_instruction(uint8_t ins) {
             break;
         case 0x4D: // RETI
             // Add more functionality later when interrupts are better implemented
-            pc = memory[sp] | (memory[sp+1] << 8);
+            w = memory[sp]; // high byte
+            sp++;
+            z = memory[sp]; // low byte
+            pc = z | (w << 8);
             sp += 2;
             iff1 = iff2;
             break;
@@ -1589,7 +1879,7 @@ void Z80_Core::ed_instruction(uint8_t ins) {
         // TODO: IMPLEMENT REMAINING OPCODES
 
         default:
-            cout << "Invalid MISC instruction: " << hex << (int)ins << endl;
+            cout << "Invalid MISC instruction: " << hex << (int)ins << " at PC: " << (int)pc << endl;
             break;
     }
 }
@@ -1767,6 +2057,6 @@ void Z80_Core::cb_instruction(uint8_t ins) {
         case 0x40: // BIT 0, B
             alu((uint16_t&)b, 0, ALU_BIT0);
         default:
-            cout << "Invalid BIT instruction: " << hex << (int)ins << endl;
+            cout << "Invalid BIT instruction: " << hex << (int)ins << " at PC: " << (int)pc << endl;
     }
 }
