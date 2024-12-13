@@ -43,6 +43,7 @@
 #define ALU_SLA8 0x12
 #define ALU_SRA8 0x13
 #define ALU_SRL8 0x14
+
 #define ALU_BIT0 0x15
 #define ALU_BIT1 0x16
 #define ALU_BIT2 0x17
@@ -51,6 +52,22 @@
 #define ALU_BIT5 0x1A
 #define ALU_BIT6 0x1B
 #define ALU_BIT7 0x1C
+#define ALU_RES0 0x1D
+#define ALU_RES1 0x1E
+#define ALU_RES2 0x1F
+#define ALU_RES3 0x20
+#define ALU_RES4 0x21
+#define ALU_RES5 0x22
+#define ALU_RES6 0x23
+#define ALU_RES7 0x24
+#define ALU_SET0 0x25
+#define ALU_SET1 0x26
+#define ALU_SET2 0x27
+#define ALU_SET3 0x28
+#define ALU_SET4 0x29
+#define ALU_SET5 0x2A
+#define ALU_SET6 0x2B
+#define ALU_SET7 0x2C
 
 using namespace std;
 
