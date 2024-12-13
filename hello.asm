@@ -1,6 +1,6 @@
 main:
     ld a, 'H'
-    out (0), a
+    out (0), a ; output to stdout
     ld a, 'e'
     out (0), a
     ld a, 'l'
