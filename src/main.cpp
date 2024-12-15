@@ -12,6 +12,9 @@ int main(int argc, char *argv[]) {
         if ((string(argv[i])).find("-d") == 0) { // debug mode
             z80.DEBUG = true;
         }
+        if ((string(argv[i])).find("-t") == 0) { // test, you can edit this for testing purposes
+            return 0;
+        }
     }
     vector<uint8_t> executable_program = loadHexToVector(filename);
     z80.loadProgram(executable_program);

@@ -82,6 +82,8 @@ class Z80_Core {
         void view_ram();
         void printInfo();
         void printCurrentState();
+
+        void testAlu(uint8_t& reg, uint8_t reg2, uint8_t ins);
     private:
         uint8_t ins;
         uint8_t memory[MEMORY_SIZE] = {0};

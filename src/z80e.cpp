@@ -343,7 +343,6 @@ void Z80_Core::run() {
 }
 
 
-
 void Z80_Core::printCurrentState() {
     cout << "PC: " << pc << " SP: " << sp << " F: " << bitset<8>(f) << endl;
     cout << "IX: " << ix << " IY: " << iy << endl;
@@ -355,6 +354,10 @@ void Z80_Core::printInfo() {
     cout << "PC: 0x" << hex << pc << " SP: 0x" << sp << " F: 0x" << bitset<8>(f) << endl;
     cout << "IX: 0x" << ix << " IY: 0x" << iy << endl;
     cout << "A: 0x" << hex << unsigned(a) << " BC: 0x" << unsigned(b) << unsigned(c) << " DE: 0x" << unsigned(d) << unsigned(e) << " HL: 0x" << unsigned(h) << unsigned(l) << endl;
+}
+
+void Z80_Core::testAlu(uint8_t& reg, uint8_t reg2, uint8_t ins) {
+    alu((uint16_t&)reg, reg2, ins);
 }
 
 void Z80_Core::alu(uint16_t& op1, uint16_t op2, uint8_t ins){
@@ -538,6 +541,70 @@ void Z80_Core::alu(uint16_t& op1, uint16_t op2, uint8_t ins){
         case 0x1C: // BIT 7, reg
             f = (op1 & 0x80) ? (f | 0x40) : (f & ~0x40);
             f |= FLAG_H;
+            return;
+            break;
+        case 0x1D: // RES 0, reg
+            op1 = op1 & 0xFE;
+            return;
+            break;
+        case 0x1E: // RES 1, reg
+            op1 = op1 & 0xFD;
+            return;
+            break;
+        case 0x1F: // RES 2, reg
+            op1 = op1 & 0xFB;
+            return;
+            break;
+        case 0x20: // RES 3, reg
+            op1 = op1 & 0xF7;
+            return;
+            break;
+        case 0x21: // RES 4, reg
+            op1 = op1 & 0xEF;
+            return;
+            break;
+        case 0x22: // RES 5, reg
+            op1 = op1 & 0xDF;
+            return;
+            break;
+        case 0x23: // RES 6, reg
+            op1 = op1 & 0xBF;
+            return;
+            break;
+        case 0x24: // RES 7, reg
+            op1 = op1 & 0x7F;
+            return;
+            break;
+        case 0x25: // SET 0, reg
+            op1 = op1 | 0x01;
+            return;
+            break;
+        case 0x26: // SET 1, reg
+            op1 = op1 | 0x02;
+            return;
+            break;
+        case 0x27: // SET 2, reg
+            op1 = op1 | 0x04;
+            return;
+            break;
+        case 0x28: // SET 3, reg
+            op1 = op1 | 0x08;
+            return;
+            break;
+        case 0x29: // SET 4, reg
+            op1 = op1 | 0x10;
+            return;
+            break;
+        case 0x2A: // SET 5, reg
+            op1 = op1 | 0x20;
+            return;
+            break;
+        case 0x2B: // SET 6, reg
+            op1 = op1 | 0x40;
+            return;
+            break;
+        case 0x2C: // SET 7, reg
+            op1 = op1 | 0x80;
             return;
             break;
         default:
@@ -2245,6 +2312,390 @@ void Z80_Core::cb_instruction(uint8_t ins) {
             break;
         case 0x7F: // BIT 7, A
             alu((uint16_t&)a, 0, ALU_BIT7);
+            break;
+        case 0x80: // RES 0, B
+            alu((uint16_t&)b, 0, ALU_RES0);
+            break;
+        case 0x81: // RES 0, C
+            alu((uint16_t&)c, 0, ALU_RES0);
+            break;
+        case 0x82: // RES 0, D
+            alu((uint16_t&)d, 0, ALU_RES0);
+            break;
+        case 0x83: // RES 0, E
+            alu((uint16_t&)e, 0, ALU_RES0);
+            break;
+        case 0x84: // RES 0, H
+            alu((uint16_t&)h, 0, ALU_RES0);
+            break;
+        case 0x85: // RES 0, L
+            alu((uint16_t&)l, 0, ALU_RES0);
+            break;
+        case 0x86: // RES 0, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_RES0);
+            break;
+        case 0x87: // RES 0, A
+            alu((uint16_t&)a, 0, ALU_RES0);
+            break;
+        case 0x88: // RES 1, B
+            alu((uint16_t&)b, 0, ALU_RES1);
+            break;
+        case 0x89: // RES 1, C
+            alu((uint16_t&)c, 0, ALU_RES1);
+            break;
+        case 0x8A: // RES 1, D
+            alu((uint16_t&)d, 0, ALU_RES1);
+            break;
+        case 0x8B: // RES 1, E
+            alu((uint16_t&)e, 0, ALU_RES1);
+            break;
+        case 0x8C: // RES 1, H
+            alu((uint16_t&)h, 0, ALU_RES1);
+            break;
+        case 0x8D: // RES 1, L
+            alu((uint16_t&)l, 0, ALU_RES1);
+            break;
+        case 0x8E: // RES 1, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_RES1);
+            break;
+        case 0x8F: // RES 1, A
+            alu((uint16_t&)a, 0, ALU_RES1);
+            break;
+        case 0x90: // RES 2, B
+            alu((uint16_t&)b, 0, ALU_RES2);
+            break;
+        case 0x91: // RES 2, C
+            alu((uint16_t&)c, 0, ALU_RES2);
+            break;
+        case 0x92: // RES 2, D
+            alu((uint16_t&)d, 0, ALU_RES2);
+            break;
+        case 0x93: // RES 2, E
+            alu((uint16_t&)e, 0, ALU_RES2);
+            break;
+        case 0x94: // RES 2, H
+            alu((uint16_t&)h, 0, ALU_RES2);
+            break;
+        case 0x95: // RES 2, L
+            alu((uint16_t&)l, 0, ALU_RES2);
+            break;
+        case 0x96: // RES 2, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_RES2);
+            break;
+        case 0x97: // RES 2, A
+            alu((uint16_t&)a, 0, ALU_RES2);
+            break;
+        case 0x98: // RES 3, B
+            alu((uint16_t&)b, 0, ALU_RES3);
+            break;
+        case 0x99: // RES 3, C
+            alu((uint16_t&)c, 0, ALU_RES3);
+            break;
+        case 0x9A: // RES 3, D
+            alu((uint16_t&)d, 0, ALU_RES3);
+            break;
+        case 0x9B: // RES 3, E
+            alu((uint16_t&)e, 0, ALU_RES3);
+            break;
+        case 0x9C: // RES 3, H
+            alu((uint16_t&)h, 0, ALU_RES3);
+            break;
+        case 0x9D: // RES 3, L
+            alu((uint16_t&)l, 0, ALU_RES3);
+            break;
+        case 0x9E: // RES 3, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_RES3);
+            break;
+        case 0x9F: // RES 3, A
+            alu((uint16_t&)a, 0, ALU_RES3);
+            break;
+        case 0xA0: // RES 4, B
+            alu((uint16_t&)b, 0, ALU_RES4);
+            break;
+        case 0xA1: // RES 4, C
+            alu((uint16_t&)c, 0, ALU_RES4);
+            break;
+        case 0xA2: // RES 4, D
+            alu((uint16_t&)d, 0, ALU_RES4);
+            break;
+        case 0xA3: // RES 4, E
+            alu((uint16_t&)e, 0, ALU_RES4);
+            break;
+        case 0xA4: // RES 4, H
+            alu((uint16_t&)h, 0, ALU_RES4);
+            break;
+        case 0xA5: // RES 4, L
+            alu((uint16_t&)l, 0, ALU_RES4);
+            break;
+        case 0xA6: // RES 4, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_RES4);
+            break;
+        case 0xA7: // RES 4, A
+            alu((uint16_t&)a, 0, ALU_RES4);
+            break;
+        case 0xA8: // RES 5, B
+            alu((uint16_t&)b, 0, ALU_RES5);
+            break;
+        case 0xA9: // RES 5, C
+            alu((uint16_t&)c, 0, ALU_RES5);
+            break;
+        case 0xAA: // RES 5, D
+            alu((uint16_t&)d, 0, ALU_RES5);
+            break;
+        case 0xAB: // RES 5, E
+            alu((uint16_t&)e, 0, ALU_RES5);
+            break;
+        case 0xAC: // RES 5, H
+            alu((uint16_t&)h, 0, ALU_RES5);
+            break;
+        case 0xAD: // RES 5, L
+            alu((uint16_t&)l, 0, ALU_RES5);
+            break;
+        case 0xAE: // RES 5, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_RES5);
+            break;
+        case 0xAF: // RES 5, A
+            alu((uint16_t&)a, 0, ALU_RES5);
+            break;
+        case 0xB0: // RES 6, B
+            alu((uint16_t&)b, 0, ALU_RES6);
+            break;
+        case 0xB1: // RES 6, C
+            alu((uint16_t&)c, 0, ALU_RES6);
+            break;
+        case 0xB2: // RES 6, D
+            alu((uint16_t&)d, 0, ALU_RES6);
+            break;
+        case 0xB3: // RES 6, E
+            alu((uint16_t&)e, 0, ALU_RES6);
+            break;
+        case 0xB4: // RES 6, H
+            alu((uint16_t&)h, 0, ALU_RES6);
+            break;
+        case 0xB5: // RES 6, L
+            alu((uint16_t&)l, 0, ALU_RES6);
+            break;
+        case 0xB6: // RES 6, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_RES6);
+            break;
+        case 0xB7: // RES 6, A
+            alu((uint16_t&)a, 0, ALU_RES6);
+            break;
+        case 0xB8: // RES 7, B
+            alu((uint16_t&)b, 0, ALU_RES7);
+            break;
+        case 0xB9: // RES 7, C
+            alu((uint16_t&)c, 0, ALU_RES7);
+            break;
+        case 0xBA: // RES 7, D
+            alu((uint16_t&)d, 0, ALU_RES7);
+            break;
+        case 0xBB: // RES 7, E
+            alu((uint16_t&)e, 0, ALU_RES7);
+            break;
+        case 0xBC: // RES 7, H
+            alu((uint16_t&)h, 0, ALU_RES7);
+            break;
+        case 0xBD: // RES 7, L
+            alu((uint16_t&)l, 0, ALU_RES7);
+            break;
+        case 0xBE: // RES 7, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_RES7);
+            break;
+        case 0xBF: // RES 7, A
+            alu((uint16_t&)a, 0, ALU_RES7);
+            break;
+        case 0xC0: // SET 0, B
+            alu((uint16_t&)b, 0, ALU_SET0);
+            break;
+        case 0xC1: // SET 0, C
+            alu((uint16_t&)c, 0, ALU_SET0);
+            break;
+        case 0xC2: // SET 0, D
+            alu((uint16_t&)d, 0, ALU_SET0);
+            break;
+        case 0xC3: // SET 0, E
+            alu((uint16_t&)e, 0, ALU_SET0);
+            break;
+        case 0xC4: // SET 0, H
+            alu((uint16_t&)h, 0, ALU_SET0);
+            break;
+        case 0xC5: // SET 0, L
+            alu((uint16_t&)l, 0, ALU_SET0);
+            break;
+        case 0xC6: // SET 0, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_SET0);
+            break;
+        case 0xC7: // SET 0, A
+            alu((uint16_t&)a, 0, ALU_SET0);
+            break;
+        case 0xC8: // SET 1, B
+            alu((uint16_t&)b, 0, ALU_SET1);
+            break;
+        case 0xC9: // SET 1, C
+            alu((uint16_t&)c, 0, ALU_SET1);
+            break;
+        case 0xCA: // SET 1, D
+            alu((uint16_t&)d, 0, ALU_SET1);
+            break;
+        case 0xCB: // SET 1, E
+            alu((uint16_t&)e, 0, ALU_SET1);
+            break;
+        case 0xCC: // SET 1, H
+            alu((uint16_t&)h, 0, ALU_SET1);
+            break;
+        case 0xCD: // SET 1, L
+            alu((uint16_t&)l, 0, ALU_SET1);
+            break;
+        case 0xCE: // SET 1, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_SET1);
+            break;
+        case 0xCF: // SET 1, A
+            alu((uint16_t&)a, 0, ALU_SET1);
+            break;
+        case 0xD0: // SET 2, B
+            alu((uint16_t&)b, 0, ALU_SET2);
+            break;
+        case 0xD1: // SET 2, C
+            alu((uint16_t&)c, 0, ALU_SET2);
+            break;
+        case 0xD2: // SET 2, D
+            alu((uint16_t&)d, 0, ALU_SET2);
+            break;
+        case 0xD3: // SET 2, E
+            alu((uint16_t&)e, 0, ALU_SET2);
+            break;
+        case 0xD4: // SET 2, H
+            alu((uint16_t&)h, 0, ALU_SET2);
+            break;
+        case 0xD5: // SET 2, L
+            alu((uint16_t&)l, 0, ALU_SET2);
+            break;
+        case 0xD6: // SET 2, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_SET2);
+            break;
+        case 0xD7: // SET 2, A
+            alu((uint16_t&)a, 0, ALU_SET2);
+            break;
+        case 0xD8: // SET 3, B
+            alu((uint16_t&)b, 0, ALU_SET3);
+            break;
+        case 0xD9: // SET 3, C
+            alu((uint16_t&)c, 0, ALU_SET3);
+            break;
+        case 0xDA: // SET 3, D
+            alu((uint16_t&)d, 0, ALU_SET3);
+            break;
+        case 0xDB: // SET 3, E
+            alu((uint16_t&)e, 0, ALU_SET3);
+            break;
+        case 0xDC: // SET 3, H
+            alu((uint16_t&)h, 0, ALU_SET3);
+            break;
+        case 0xDD: // SET 3, L
+            alu((uint16_t&)l, 0, ALU_SET3);
+            break;
+        case 0xDE: // SET 3, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_SET3);
+            break;
+        case 0xDF: // SET 3, A
+            alu((uint16_t&)a, 0, ALU_SET3);
+            break;
+        case 0xE0: // SET 4, B
+            alu((uint16_t&)b, 0, ALU_SET4);
+            break;
+        case 0xE1: // SET 4, C
+            alu((uint16_t&)c, 0, ALU_SET4);
+            break;
+        case 0xE2: // SET 4, D
+            alu((uint16_t&)d, 0, ALU_SET4);
+            break;
+        case 0xE3: // SET 4, E
+            alu((uint16_t&)e, 0, ALU_SET4);
+            break;
+        case 0xE4: // SET 4, H
+            alu((uint16_t&)h, 0, ALU_SET4);
+            break;
+        case 0xE5: // SET 4, L
+            alu((uint16_t&)l, 0, ALU_SET4);
+            break;
+        case 0xE6: // SET 4, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_SET4);
+            break;
+        case 0xE7: // SET 4, A
+            alu((uint16_t&)a, 0, ALU_SET4);
+            break;
+        case 0xE8: // SET 5, B
+            alu((uint16_t&)b, 0, ALU_SET5);
+            break;
+        case 0xE9: // SET 5, C
+            alu((uint16_t&)c, 0, ALU_SET5);
+            break;
+        case 0xEA: // SET 5, D
+            alu((uint16_t&)d, 0, ALU_SET5);
+            break;
+        case 0xEB: // SET 5, E
+            alu((uint16_t&)e, 0, ALU_SET5);
+            break;
+        case 0xEC: // SET 5, H
+            alu((uint16_t&)h, 0, ALU_SET5);
+            break;
+        case 0xED: // SET 5, L
+            alu((uint16_t&)l, 0, ALU_SET5);
+            break;
+        case 0xEE: // SET 5, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_SET5);
+            break;
+        case 0xEF: // SET 5, A
+            alu((uint16_t&)a, 0, ALU_SET5);
+            break;
+        case 0xF0: // SET 6, B
+            alu((uint16_t&)b, 0, ALU_SET6);
+            break;
+        case 0xF1: // SET 6, C
+            alu((uint16_t&)c, 0, ALU_SET6);
+            break;
+        case 0xF2: // SET 6, D
+            alu((uint16_t&)d, 0, ALU_SET6);
+            break;
+        case 0xF3: // SET 6, E
+            alu((uint16_t&)e, 0, ALU_SET6);
+            break;
+        case 0xF4: // SET 6, H
+            alu((uint16_t&)h, 0, ALU_SET6);
+            break;
+        case 0xF5: // SET 6, L
+            alu((uint16_t&)l, 0, ALU_SET6);
+            break;
+        case 0xF6: // SET 6, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_SET6);
+            break;
+        case 0xF7: // SET 6, A
+            alu((uint16_t&)a, 0, ALU_SET6);
+            break;
+        case 0xF8: // SET 7, B
+            alu((uint16_t&)b, 0, ALU_SET7);
+            break;
+        case 0xF9: // SET 7, C
+            alu((uint16_t&)c, 0, ALU_SET7);
+            break;
+        case 0xFA: // SET 7, D
+            alu((uint16_t&)d, 0, ALU_SET7);
+            break;
+        case 0xFB: // SET 7, E
+            alu((uint16_t&)e, 0, ALU_SET7);
+            break;
+        case 0xFC: // SET 7, H
+            alu((uint16_t&)h, 0, ALU_SET7);
+            break;
+        case 0xFD: // SET 7, L
+            alu((uint16_t&)l, 0, ALU_SET7);
+            break;
+        case 0xFE: // SET 7, (HL)
+            alu((uint16_t&)memory[l | (h << 8)], 0, ALU_SET7);
+            break;
+        case 0xFF: // SET 7, A
+            alu((uint16_t&)a, 0, ALU_SET7);
             break;
         default:
             cout << "Invalid BIT instruction: " << hex << (int)ins << " at PC: " << (int)pc << endl;
