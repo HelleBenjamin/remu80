@@ -7,7 +7,7 @@ using namespace std;
 
 vector<uint8_t> program;
 
-/*Z80 EMULATOR by Benjamin Helle (2024)*/
+/*Z80 EMULATOR by Benjamin Helle (C) 2024*/
 
 /*
     FLAGS
@@ -360,7 +360,8 @@ void Z80_Core::testAlu(uint8_t& reg, uint8_t reg2, uint8_t ins) {
     alu((uint16_t&)reg, reg2, ins);
 }
 
-void Z80_Core::alu(uint16_t& op1, uint16_t op2, uint8_t ins){
+void Z80_Core::alu(uint16_t& op1, uint16_t op2, uint8_t ins) {
+
     /* 
     OP1 is the destination register
     OP2 is the source register/immediate
@@ -396,268 +397,195 @@ void Z80_Core::alu(uint16_t& op1, uint16_t op2, uint8_t ins){
         0x1A, BIT 5, reg
         0x1B, BIT 6, reg
         0x1C, BIT 7, reg
+        0x1D, RES 0, reg
+        0x1E, RES 1, reg
+        0x1F, RES 2, reg
+        0x20, RES 3, reg
+        0x21, RES 4, reg
+        0x22, RES 5, reg
+        0x23, RES 6, reg
+        0x24, RES 7, reg
+        0x25, SET 0, reg
+        0x26, SET 1, reg
+        0x27, SET 2, reg
+        0x28, SET 3, reg
+        0x29, SET 4, reg
+        0x2A, SET 5, reg
+        0x2B, SET 6, reg
+        0x2C, SET 7, reg
     */
-    bool bitShort = false; // false = 8-bit, true = 16-bit
+   
     bool isCompare = false;
-    int accumulator = 0;
+    bool bitShort = false;
+    int result = 0;
+    bool carry_in = false;
+    
+    auto updateFlags8bit = [&](int val) {
+        // Zero flag
+        f = (val == 0) ? (f | FLAG_Z) : (f & ~FLAG_Z);
+        // Carry flag
+        f = (val & 0x100) ? (f | FLAG_C) : (f & ~FLAG_C);
+        // Half-carry flag
+        f = ((op1 & 0xF) + (op2 & 0xF)) > 0xF ? (f | FLAG_H) : (f & ~FLAG_H);
+        // Negative flag
+        f = (val < 0) ? (f | FLAG_N) : (f & ~FLAG_N);
+    };
+
     switch (ins) {
         case 0x00: // ADD8 reg, reg/n
-            accumulator = (op1 & 0xFF) + (op2 & 0xFF);
+            result = (op1 & 0xFF) + (op2 & 0xFF);
+            op1 = (op1 & 0xFF00) | (result & 0xFF);
+            updateFlags8bit(result);
             break;
         case 0x01: // ADD16 reg, reg/nn
-            accumulator = op1 + op2;
+            result = op1 + op2;
             bitShort = true;
+            op1 = result;
+            updateFlags8bit(result);
             break;
         case 0x02: // ADC8 reg, reg/n
-            accumulator = (op1 & 0xFF) + (op2 & 0xFF) + (f & 0x01);
+            result = (op1 & 0xFF) + (op2 & 0xFF) + (f & FLAG_C);
+            op1 = (op1 & 0xFF00) | (result & 0xFF);
+            updateFlags8bit(result);
             break;
         case 0x03: // ADC16 reg, reg/nn
-            accumulator = op1 + op2 + (f & 0x01);
+            result = op1 + op2 + (f & FLAG_C);
             bitShort = true;
+            op1 = result;
+            updateFlags8bit(result);
             break;
         case 0x04: // SUB8 reg, reg/n
-            accumulator = (op1 & 0xFF) - (op2 & 0xFF);
+            result = (op1 & 0xFF) - (op2 & 0xFF);
+            op1 = (op1 & 0xFF00) | (result & 0xFF);
+            updateFlags8bit(result);
             break;
         case 0x05: // SUB16 reg, reg/nn
-            accumulator = op1 - op2;
+            result = op1 - op2;
             bitShort = true;
+            op1 = result;
+            updateFlags8bit(result);
             break;
         case 0x06: // SBC8 reg, reg/n
-            accumulator = (op1 & 0xFF) - (op2 & 0xFF) - (f & 0x01);
+            result = (op1 & 0xFF) - (op2 & 0xFF) - (f & FLAG_C);
+            op1 = (op1 & 0xFF00) | (result & 0xFF);
+            updateFlags8bit(result);
             break;
         case 0x07: // SBC16 reg, reg/nn
-            accumulator = op1 - op2 - (f & 0x01);
+            result = op1 - op2 - (f & FLAG_C);
             bitShort = true;
+            op1 = result;
+            updateFlags8bit(result);
             break;
         case 0x08: // AND reg, reg/n
-            accumulator = (op1 & 0xFF) & (op2 & 0xFF);
+            result = (op1 & 0xFF) & (op2 & 0xFF);
+            op1 = (op1 & 0xFF00) | (result & 0xFF);
+            updateFlags8bit(result);
+            f |= FLAG_H; // Always set the half-carry flag for AND operations
             break;
         case 0x09: // OR reg, reg/n
-            accumulator = (op1 & 0xFF) | (op2 & 0xFF);
+            result = (op1 & 0xFF) | (op2 & 0xFF);
+            op1 = (op1 & 0xFF00) | (result & 0xFF);
+            updateFlags8bit(result);
             break;
         case 0x0A: // XOR reg, reg/n
-            accumulator = (op1 & 0xFF) ^ (op2 & 0xFF);
+            result = (op1 & 0xFF) ^ (op2 & 0xFF);
+            op1 = (op1 & 0xFF00) | (result & 0xFF);
+            updateFlags8bit(result);
             break;
         case 0x0B: // CP reg, reg/n
-            accumulator = (op1 & 0xFF) - (op2 & 0xFF);
+            result = (op1 & 0xFF) - (op2 & 0xFF);
             isCompare = true;
+            updateFlags8bit(result);
             break;
         case 0x0C: // INC reg
-            accumulator = (op1 & 0xFF) + 1;
+            result = (op1 & 0xFF) + 1;
+            op1 = (op1 & 0xFF00) | (result & 0xFF);
+            updateFlags8bit(result);
             break;
         case 0x0D: // DEC reg
-            accumulator = (op1 & 0xFF) - 1;
+            result = (op1 & 0xFF) - 1;
+            op1 = (op1 & 0xFF00) | (result & 0xFF);
+            updateFlags8bit(result);
             break;
+        // Rotation and shifting
         case 0x0E: // RLC reg
-            op1 = op1 & 0xFF; // clear upper 8 bits
-            f = (op1 & 0x80) ? (f | 0x01) : (f & ~0x01); // carry flag
-            op1 = ((op1 << 1) | (op1 >> 7)) & 0xFF;
-            f = (op1 == 0) ? (f | 0x40) : (f & ~0x40); // zero flag
-            return;
-            break;
         case 0x0F: // RL reg
-            op1 = op1 & 0xFF; // clear upper 8 bits
-            {
-                bool carry_in = f & 0x01;
-                f = (op1 & 0x80) ? (f | 0x01) : (f & ~0x01);
-                op1 = ((op1 << 1) | carry_in) & 0xFF;
-                f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
-            }
-            return;
-            break;
         case 0x10: // RRC reg
-            op1 = op1 & 0xFF; // clear upper 8 bits
-            f = (op1 & 0x01) ? (f | 0x01) : (f & ~0x01);
-            op1 = ((op1 >> 1) | (op1 << 7)) & 0xFF;
-            f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
-            return;
-            break;
         case 0x11: // RR reg
-            op1 = op1 & 0xFF; // clear upper 8 bits
-            {
-                bool carry_in = f & 0x01;
-                f = (op1 & 0x01) ? (f | 0x01) : (f & ~0x01);
-                op1 = ((op1 >> 1) | (carry_in << 7)) & 0xFF;
-                f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
-            }
-            return;
-            break;
         case 0x12: // SLA reg
-            op1 = op1 & 0xFF; // clear upper 8 bits
-            f = (op1 & 0x80) ? (f | 0x01) : (f & ~0x01);
-            op1 = (op1 << 1) & 0xFF;
-            f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
-            return;
-            break;
         case 0x13: // SRA reg
-            op1 = op1 & 0xFF; // clear upper 8 bits
-            f = (op1 & 0x01) ? (f | 0x01) : (f & ~0x01);
-            op1 = (op1 >> 1) | (op1 & 0x80);
-            f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
-            return;
-            break;
         case 0x14: // SRL reg
-            op1 = op1 & 0xFF; // clear upper 8 bits
-            f = (op1 & 0x01) ? (f | 0x01) : (f & ~0x01);
-            op1 = (op1 >> 1);
-            f = (op1 == 0) ? (f | 0x40) : (f & ~0x40);
-            return;
+            op1 &= 0xFF; // clear upper 8 bits
+            carry_in = (f & FLAG_C);
+            switch (ins) {
+                case 0x0E: // RLC
+                    f = (op1 & 0x80) ? (f | FLAG_C) : (f & ~FLAG_C);
+                    op1 = (op1 << 1) | (op1 >> 7);
+                    break;
+                case 0x0F: // RL
+                    f = (op1 & 0x80) ? (f | FLAG_C) : (f & ~FLAG_C);
+                    op1 = (op1 << 1) | carry_in;
+                    break;
+                case 0x10: // RRC
+                    f = (op1 & 0x01) ? (f | FLAG_C) : (f & ~FLAG_C);
+                    op1 = (op1 >> 1) | (op1 << 7);
+                    break;
+                case 0x11: // RR
+                    f = (op1 & 0x01) ? (f | FLAG_C) : (f & ~FLAG_C);
+                    op1 = (op1 >> 1) | (carry_in << 7);
+                    break;
+                case 0x12: // SLA
+                    f = (op1 & 0x80) ? (f | FLAG_C) : (f & ~FLAG_C);
+                    op1 = (op1 << 1);
+                    break;
+                case 0x13: // SRA
+                    f = (op1 & 0x01) ? (f | FLAG_C) : (f & ~FLAG_C);
+                    op1 = (op1 >> 1) | (op1 & 0x80);
+                    break;
+                case 0x14: // SRL
+                    f = (op1 & 0x01) ? (f | FLAG_C) : (f & ~FLAG_C);
+                    op1 = (op1 >> 1);
+                    break;
+            }
+            f = (op1 == 0) ? (f | FLAG_Z) : (f & ~FLAG_Z); // Set zero flag
             break;
+
         case 0x15: // BIT 0, reg
-            f = (op1 & 0x01) ? (f | 0x40) : (f & ~0x40);
-            f |= FLAG_H;
-            return;
-            break;
         case 0x16: // BIT 1, reg
-            f = (op1 & 0x02) ? (f | 0x40) : (f & ~0x40);
-            f |= FLAG_H;
-            return;
-            break;
         case 0x17: // BIT 2, reg
-            f = (op1 & 0x04) ? (f | 0x40) : (f & ~0x40);
-            f |= FLAG_H;
-            return;
-            break;
         case 0x18: // BIT 3, reg
-            f = (op1 & 0x08) ? (f | 0x40) : (f & ~0x40);
-            f |= FLAG_H;
-            return;
-            break;
         case 0x19: // BIT 4, reg
-            f = (op1 & 0x10) ? (f | 0x40) : (f & ~0x40);
-            f |= FLAG_H;
-            return;
-            break;
         case 0x1A: // BIT 5, reg
-            f = (op1 & 0x20) ? (f | 0x40) : (f & ~0x40);
-            f |= FLAG_H;
-            return;
-            break;
         case 0x1B: // BIT 6, reg
-            f = (op1 & 0x40) ? (f | 0x40) : (f & ~0x40);
-            f |= FLAG_H;
-            return;
-            break;
         case 0x1C: // BIT 7, reg
-            f = (op1 & 0x80) ? (f | 0x40) : (f & ~0x40);
+            f = (op1 & (1 << (ins - 0x15))) ? (f | FLAG_Z) : (f & ~FLAG_Z);
             f |= FLAG_H;
-            return;
             break;
-        case 0x1D: // RES 0, reg
-            op1 = op1 & 0xFE;
-            return;
+
+        case 0x20: // RES 0, reg
+        case 0x21: // RES 1, reg
+        case 0x22: // RES 2, reg
+        case 0x23: // RES 3, reg
+        case 0x24: // RES 4, reg
+        case 0x25: // RES 5, reg
+        case 0x26: // RES 6, reg
+        case 0x27: // RES 7, reg
+            op1 &= ~(1 << (ins - 0x20));
             break;
-        case 0x1E: // RES 1, reg
-            op1 = op1 & 0xFD;
-            return;
+
+        case 0x28: // SET 0, reg
+        case 0x29: // SET 1, reg
+        case 0x2A: // SET 2, reg
+        case 0x2B: // SET 3, reg
+        case 0x2C: // SET 4, reg
+        case 0x2D: // SET 5, reg
+        case 0x2E: // SET 6, reg
+        case 0x2F: // SET 7, reg
+            op1 |= (1 << (ins - 0x28));
             break;
-        case 0x1F: // RES 2, reg
-            op1 = op1 & 0xFB;
-            return;
-            break;
-        case 0x20: // RES 3, reg
-            op1 = op1 & 0xF7;
-            return;
-            break;
-        case 0x21: // RES 4, reg
-            op1 = op1 & 0xEF;
-            return;
-            break;
-        case 0x22: // RES 5, reg
-            op1 = op1 & 0xDF;
-            return;
-            break;
-        case 0x23: // RES 6, reg
-            op1 = op1 & 0xBF;
-            return;
-            break;
-        case 0x24: // RES 7, reg
-            op1 = op1 & 0x7F;
-            return;
-            break;
-        case 0x25: // SET 0, reg
-            op1 = op1 | 0x01;
-            return;
-            break;
-        case 0x26: // SET 1, reg
-            op1 = op1 | 0x02;
-            return;
-            break;
-        case 0x27: // SET 2, reg
-            op1 = op1 | 0x04;
-            return;
-            break;
-        case 0x28: // SET 3, reg
-            op1 = op1 | 0x08;
-            return;
-            break;
-        case 0x29: // SET 4, reg
-            op1 = op1 | 0x10;
-            return;
-            break;
-        case 0x2A: // SET 5, reg
-            op1 = op1 | 0x20;
-            return;
-            break;
-        case 0x2B: // SET 6, reg
-            op1 = op1 | 0x40;
-            return;
-            break;
-        case 0x2C: // SET 7, reg
-            op1 = op1 | 0x80;
-            return;
-            break;
-        default:
-            cout << "Invalid ALU instruction: " << hex << ins << endl;
     }
-
-    if (isCompare){
-        if (accumulator == 0) {
-            f |= 0x40; // Set Z flag
-        } else {
-            f &= ~0x40; // Clear Z flag
-        }
-        if (accumulator < 0) {
-            f |= 0x01; // Set C flag
-        } else {
-            f &= ~0x01; // Clear C flag
-        }
-        return;
-    }
-
-    if (accumulator == 0) {
-        f |= 0x40; // Set Z flag
-    } else {
-        f &= ~0x40; // Clear Z flag
-    }
-
-    if (accumulator > 0xff && !bitShort) { //8-bit overflow
-        f |= 0x01 | 0x04; // carry and overflow
-    } else {
-        f &= ~(0x01 | 0x04); // clear carry and overflow
-    }
-
-    if (accumulator > 0xffff && bitShort) { //16-bit overflow
-        f |= 0x01 | 0x04; // carry and overflow
-    } else {
-        f &= ~(0x01 | 0x04); // clear carry and overflow
-    }
-
-    if (accumulator < 0) {
-        f |= 0x02 | 0x80; // negative and sign
-    } else {
-        f &= ~(0x02 | 0x80); // clear negative and sign
-    }
-
-
-    if (accumulator & 0x01) {
-        f |= 0x04; // set odd flag
-    } else {
-        f &= ~0x04; // clear odd flag
-    }
-
-    op1 = bitShort ? static_cast<uint16_t>(accumulator) : static_cast<uint8_t>(accumulator);
 }
+
 
 uint8_t Z80_Core::fetchOperand() { // fetch operand
     uint8_t operand = memory[pc];
@@ -709,12 +637,19 @@ uint16_t Z80_Core::convToRegPair(uint8_t l, uint8_t h) {
     return (uint16_t)l | (h << 8);
 }
 
+
 void Z80_Core::decode_execute(uint8_t instruction) {
     int8_t raddr = 0; // relative address, used for relative jumps
     uint16_t temp, temp2 = 0;
+    if (nop_watchdog > 10) { // prevent infinite loops, can be adjusted or disabled
+        cout << "Infinite loop detected at address: " << hex << pc << endl;
+        exit(0);
+    }
     ExecutedInstructions.push_back(instruction);
+    if(DEBUG) cout << hex << (int)pc << " Executing instruction: " << Opcodes[instruction] << endl;
     switch (instruction) {
         case 0x00: // NOP
+            if(ExecutedInstructions[pc-1] == 0x00) nop_watchdog++;
             break;
         case 0x01: // LD BC, nn
             c = fetchOperand();
@@ -974,7 +909,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             a = fetchOperand();
             break;
         case 0x3F: // CCF, invert carry flag
-            f |= !(f & 0x01);
+            f |= !(f & FLAG_C);
             break;
         case 0x40: // LD B, B
             b = b;
@@ -1361,10 +1296,11 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             alu((uint16_t&)a, (uint16_t&)a, ALU_CP8);
             break;
         case 0xC0: // RET NZ
-            if (!(f & 0x40)) {
+            if (!(f & FLAG_Z)) {
                 w = memory[sp]; // high byte
                 sp++;
                 z = memory[sp]; // low byte
+                sp++;
                 pc = z | (w << 8);
             }
             break;
@@ -1372,9 +1308,10 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             c = memory[sp];
             sp++;
             b = memory[sp];
+            sp++;
             break;
         case 0xC2: // JP NZ, nn
-            if (!(f & 0x40)) {
+            if (!(f & FLAG_Z)) {
                 pc = (fetchOperand() | (fetchOperand() << 8));
             }
             break;
@@ -1383,7 +1320,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             break;
         case 0xC4: // CALL NZ, nn
             pc += 3;
-            if (!(f & 0x40)) {
+            if (!(f & FLAG_Z)) {
                 sp--;
                 memory[sp] = pc >> 8; // high byte
                 sp--;
@@ -1413,6 +1350,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
                 w = memory[sp]; // high byte
                 sp++;
                 z = memory[sp]; // low byte
+                sp++;
                 pc = z | (w << 8);
             }
             break;
@@ -1420,6 +1358,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             w = memory[sp]; // high byte
             sp++;
             z = memory[sp]; // low byte
+            sp++;
             pc = z | (w << 8);
             break;
         case 0xCA: // JP Z, nn
@@ -1432,7 +1371,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             ed_instruction(w);
             break;
         case 0xCC: // CALL Z, nn
-            if(f & 0x40){
+            if(f & FLAG_Z){
                 sp--;
                 memory[sp] = pc & 0xFF; // low byte
                 sp--;
@@ -1443,12 +1382,12 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             }
             break;
         case 0xCD: // CALL nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             sp--;
             memory[sp] = pc & 0xFF; // low byte
             sp--;
             memory[sp] = pc >> 8; // high byte
-            w = fetchOperand(); // low byte
-            z = fetchOperand(); // high byte
             pc = (w | (z << 8));
             break;
         case 0xCE: // ADC A, n
@@ -1463,10 +1402,11 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             pc = 0x08;
             break;
         case 0xD0: // RET NC
-            if(!(f & 0x01)){
+            if(!(f & FLAG_C)){
                 w = memory[sp]; // high byte
                 sp++;
                 z = memory[sp]; // low byte
+                sp++;
                 pc = z | (w << 8);
             }
             break;
@@ -1474,9 +1414,10 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             e = memory[sp];
             sp++;
             d = memory[sp];
+            sp++;
             break;
         case 0xD2: // JP NC, nn
-            if(!(f & 0x01)){
+            if(!(f & FLAG_C)){
                 pc = (fetchOperand() | (fetchOperand() << 8));
             }
             break;
@@ -1485,7 +1426,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             outputHandler(a,w);
             break;
         case 0xD4: // CALL NC, nn
-            if(!(f & 0x01)){
+            if(!(f & FLAG_C)){
                 sp--;
                 memory[sp] = pc & 0xFF; // low byte
                 sp--;
@@ -1513,10 +1454,11 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             pc = 0x10;
             break;
         case 0xD8: // RET C
-            if(f & 0x01){
+            if(f & FLAG_C){
                 w = memory[sp]; // high byte
                 sp++;
                 z = memory[sp]; // low byte
+                sp++;
                 pc = z | (w << 8);
             }
             break;
@@ -1535,7 +1477,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             swapRegs(l, w);
             break;
         case 0xDA: // JP C, nn
-            if(f & 0x01){
+            if(f & FLAG_C){
                 pc = (fetchOperand() | (fetchOperand() << 8));
             }
             break;
@@ -1544,7 +1486,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             a = inputHandler(w);
             break;
         case 0xDC: // CALL C, nn
-            if(f & 0x01){
+            if(f & FLAG_C){
                 sp--;
                 memory[sp] = pc & 0xFF; // low byte
                 sp--;
@@ -1573,6 +1515,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
                 w = memory[sp]; // high byte
                 sp++;
                 z = memory[sp]; // low byte
+                sp++;
                 pc = z | (w << 8);
             }
             break;
@@ -1580,6 +1523,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             l = memory[sp];
             sp++;
             h = memory[sp];
+            sp++;
             break;
         case 0xE2: // JP PO, nn
             if(!(f & 0x04)){
@@ -1628,6 +1572,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
                 w = memory[sp]; // high byte
                 sp++;
                 z = memory[sp]; // low byte
+                sp++;
                 pc = z | (w << 8);
             }
             break;
@@ -1680,6 +1625,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
                 w = memory[sp]; // high byte
                 sp++;
                 z = memory[sp]; // low byte
+                sp++;
                 pc = z | (w << 8);
             }
             break;
@@ -1687,6 +1633,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             f = memory[sp];
             sp++;
             a = memory[sp];
+            sp++;
             break;
         case 0xF2: // JP P, nn
             if(!(f & 0x80)){
@@ -1729,6 +1676,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
                 w = memory[sp]; // high byte
                 sp++;
                 z = memory[sp]; // low byte
+                sp++;
                 pc = z | (w << 8);
             }
             break;
@@ -1803,6 +1751,7 @@ void Z80_Core::ed_instruction(uint8_t ins) {
             w = memory[sp]; // high byte
             sp++;
             z = memory[sp]; // low byte
+            sp++;
             pc = z | (w << 8);
             iff1 = iff2;
             break;
@@ -1834,6 +1783,7 @@ void Z80_Core::ed_instruction(uint8_t ins) {
             w = memory[sp]; // high byte
             sp++;
             z = memory[sp]; // low byte
+            sp++;
             pc = z | (w << 8);
             sp += 2;
             iff1 = iff2;

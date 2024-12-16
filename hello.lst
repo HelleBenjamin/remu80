@@ -1,0 +1,38 @@
+Sections:
+00: "org0001:0" (0-22)
+
+
+Source: "hello.asm"
+                        	     1:     .ORG 0x0000
+                        	     2: 
+                        	     3: MAIN:
+00:0000 310020          	     4:     LD SP, 0x2000
+00:0003 211300          	     5:     LD HL, MSG  ; Load address of MSG
+00:0006 CD0A00          	     6:     CALL PRINT
+00:0009 76              	     7:     HALT
+                        	     8: 
+                        	     9: PRINT:
+00:000A 7E              	    10:     LD A, (HL)  ; Load char pointed by HL
+00:000B FE00            	    11:     CP 0    ; Check if end
+00:000D C8              	    12:     RET Z   ; Return if end
+00:000E D300            	    13:     OUT (0x00), A   ; Print to stdout
+00:0010 23              	    14:     INC HL  ; Next char
+00:0011 18F7            	    15:     JR PRINT
+                        	    16: 
+                        	    17: MSG:
+00:0013 48656C6C6F20576F	    18:     .DB "Hello World!", 0DH, 0AH, 0
+00:001B 726C6421
+00:001F 0D
+00:0020 0A
+00:0021 00
+
+
+Symbols by name:
+MAIN                             A:0000
+MSG                              A:0013
+PRINT                            A:000A
+
+Symbols by value:
+0000 MAIN
+000A PRINT
+0013 MSG

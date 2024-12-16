@@ -84,6 +84,7 @@ class Z80_Core {
         void printCurrentState();
 
         void testAlu(uint8_t& reg, uint8_t reg2, uint8_t ins);
+        int nop_watchdog = 0; // prevent infinite loops
     private:
         uint8_t ins;
         uint8_t memory[MEMORY_SIZE] = {0};

@@ -11,7 +11,7 @@ Remu80 is a simple Z80 emulator written in C++. Its goal is to be a fully functi
 ## How to use
 1. Compile the project using the command ```make```.
 2. Run the emulator using the command ```./main -p <program.name>```. For debugging purposes, run with the ```-d``` flag.
-3. The program will be loaded into memory and executed. 
+3. The program will be loaded into memory and will be executed. 
 
 ## License
 This project is released under the [GPL V3](https://www.gnu.org/licenses/gpl-3.0.en.html) license

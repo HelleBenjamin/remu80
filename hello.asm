@@ -1,47 +1,18 @@
-main:
-    ld a, 'H'
-    out (0), a ; output to stdout
-    ld a, 'e'
-    out (0), a
-    ld a, 'l'
-    out (0), a
-    ld a, 'l'
-    out (0), a
-    ld a, 'o'
-    out (0), a
-    ld a, ' '
-    out (0), a
-    ld a, 'W'
-    out (0), a
-    ld a, 'o'
-    out (0), a
-    ld a, 'r'
-    out (0), a
-    ld a, 'l'
-    out (0), a
-    ld a, 'd'
-    out (0), a
-    ld a, '!'
-    out (0), a
-    ld a, '\n'
-    out (0), a
-    
-    ld a, '0'
-    ld c, 48
-    push af
-    
-loop:
-    pop af
-    out (0), a
-    inc a
-    dec c
-    push af
-    ld a, c
-    jp nz, loop
-    jr z, end
-    
-    
-end:
-    ld a, '\n'
-    out (0), a
-    halt
+    .ORG 0x0000
+
+MAIN:
+    LD SP, 0x2000
+    LD HL, MSG  ; Load address of MSG
+    CALL PRINT
+    HALT
+
+PRINT:
+    LD A, (HL)  ; Load char pointed by HL
+    CP 0    ; Check if end
+    RET Z   ; Return if end
+    OUT (0x00), A   ; Print to stdout
+    INC HL  ; Next char
+    JR PRINT
+
+MSG:
+    .DB "Hello World!", 0DH, 0AH, 0
