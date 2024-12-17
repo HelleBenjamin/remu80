@@ -2,7 +2,7 @@
 #include "../include/loadHex.h"
 
 int main(int argc, char *argv[]) {
-    cout << "Z80 emulator v1.0 (C) Benjamin Helle" << endl;
+    cout << "Z80 emulator v1.0 (C) Benjamin Helle 2024" << endl;
     Z80_Core z80;
     string filename;
     for (int i = 0; i < argc; i++) {

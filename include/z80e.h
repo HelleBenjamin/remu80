@@ -69,6 +69,9 @@
 #define ALU_SET6 0x2B
 #define ALU_SET7 0x2C
 
+#define ALU_INC16 0x2D
+#define ALU_DEC16 0x2E
+
 using namespace std;
 
 class Z80_Core {
@@ -117,5 +120,6 @@ class Z80_Core {
 
         void ed_instruction(uint8_t ins); // extended instructions
         void cb_instruction(uint8_t ins); // bit instructions
+        void dd_instruction(uint8_t ins); // ix prefix instructions
 };
 #endif

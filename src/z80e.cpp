@@ -413,6 +413,8 @@ void Z80_Core::alu(uint16_t& op1, uint16_t op2, uint8_t ins) {
         0x2A, SET 5, reg
         0x2B, SET 6, reg
         0x2C, SET 7, reg
+        0x2D, 16-bit INC reg
+        0x2E, 16-bit DEC reg
     */
    
     bool isCompare = false;
@@ -562,26 +564,33 @@ void Z80_Core::alu(uint16_t& op1, uint16_t op2, uint8_t ins) {
             f |= FLAG_H;
             break;
 
-        case 0x20: // RES 0, reg
-        case 0x21: // RES 1, reg
-        case 0x22: // RES 2, reg
-        case 0x23: // RES 3, reg
-        case 0x24: // RES 4, reg
-        case 0x25: // RES 5, reg
-        case 0x26: // RES 6, reg
-        case 0x27: // RES 7, reg
+        case 0x1D: // RES 0, reg
+        case 0x1E: // RES 1, reg
+        case 0x1F: // RES 2, reg
+        case 0x20: // RES 3, reg
+        case 0x21: // RES 4, reg
+        case 0x22: // RES 5, reg
+        case 0x23: // RES 6, reg
+        case 0x24: // RES 7, reg
             op1 &= ~(1 << (ins - 0x20));
             break;
 
-        case 0x28: // SET 0, reg
-        case 0x29: // SET 1, reg
-        case 0x2A: // SET 2, reg
-        case 0x2B: // SET 3, reg
-        case 0x2C: // SET 4, reg
-        case 0x2D: // SET 5, reg
-        case 0x2E: // SET 6, reg
-        case 0x2F: // SET 7, reg
+        case 0x25: // SET 0, reg
+        case 0x26: // SET 1, reg
+        case 0x27: // SET 2, reg
+        case 0x28: // SET 3, reg
+        case 0x29: // SET 4, reg
+        case 0x2A: // SET 5, reg
+        case 0x2B: // SET 6, reg
+        case 0x2C: // SET 7, reg
             op1 |= (1 << (ins - 0x28));
+            break;
+        
+        case 0x2D: // 16-bit INC reg
+            op1++;
+            break;
+        case 0x2E: // 16-bit DEC reg
+            op1--;
             break;
     }
 }
@@ -646,7 +655,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
         exit(0);
     }
     ExecutedInstructions.push_back(instruction);
-    if(DEBUG) cout << hex << (int)pc << " Executing instruction: " << Opcodes[instruction] << endl;
+    if(DEBUG) cout << "PC: " << hex << (int)pc << "  INS: " << Opcodes[instruction] << endl;
     switch (instruction) {
         case 0x00: // NOP
             if(ExecutedInstructions[pc-1] == 0x00) nop_watchdog++;
@@ -1497,7 +1506,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             }
             break;
         case 0xDD: // IX PREFIX
-            cout << "IX PREFIX NOT IMPLEMENTED" << endl;
+            dd_instruction(fetchOperand());
             break;
         case 0xDE: // SBC A, n
             w = fetchOperand();
@@ -2649,5 +2658,47 @@ void Z80_Core::cb_instruction(uint8_t ins) {
             break;
         default:
             cout << "Invalid BIT instruction: " << hex << (int)ins << " at PC: " << (int)pc << endl;
+    }
+}
+
+void Z80_Core::dd_instruction(uint8_t ins) { // TODO: Implement undocumented instructions
+    switch (ins) {
+        case 0x09: // ADD IX, BC
+            alu(ix, convToRegPair(c, b), ALU_ADD16);
+            break;
+        case 0x19: // ADD IX, DE
+            alu(ix, convToRegPair(e, d), ALU_ADD16);
+            break;
+        case 0x21: // LD IX, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
+            ix = w | (z << 8);
+            break;
+        case 0x22: // LD (nn), IX
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
+            memory[w | (z << 8)] = l;
+            memory[(w | (z << 8)) + 1] = h;
+            break;
+        case 0x23: // INC IX
+            alu(ix, 0, ALU_INC16);
+            break;
+        case 0x29: // ADD IX, IX
+            alu(ix, ix, ALU_ADD16);
+            break;
+        case 0x2A: // LD IX, (nn)
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
+            ix = (w | (z << 8));
+            break;
+        case 0x2B: // DEC IX
+            alu(ix, 0, ALU_DEC16);
+            break;
+        case 0x34: // INC (IX+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)memory[ix+w], 0 , ALU_INC8);
+            break;
+        default:
+            cout << "Invalid DD instruction: " << hex << (int)ins << " at PC: " << (int)pc << endl;
     }
 }

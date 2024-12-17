@@ -4,6 +4,12 @@ MAIN:
     LD SP, 0x2000
     LD HL, MSG  ; Load address of MSG
     CALL PRINT
+    LD BC, 0x1234
+    PUSH BC
+    LD IX, 0x199D
+    INC (IX+1)
+    POP BC
+    OUT (0x01), A    
     HALT
 
 PRINT:
