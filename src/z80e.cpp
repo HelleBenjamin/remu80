@@ -2698,6 +2698,126 @@ void Z80_Core::dd_instruction(uint8_t ins) { // TODO: Implement undocumented ins
             w = (int8_t)fetchOperand();
             alu((uint16_t&)memory[ix+w], 0 , ALU_INC8);
             break;
+        case 0x35: // DEC (IX+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)memory[ix+w], 0 , ALU_DEC8);
+            break;
+        case 0x36: // LD (IX+d), n
+            w = (int8_t)fetchOperand();
+            memory[ix+w] = fetchOperand();
+            break;
+        case 0x39: // ADD IX, SP
+            alu(ix, sp, ALU_ADD16);
+            break;
+        case 0x46: // LD B, (IX+d)
+            w = (int8_t)fetchOperand();
+            b = memory[ix+w];
+            break;
+        case 0x4E: // LD C, (IX+d)
+            w = (int8_t)fetchOperand();
+            c = memory[ix+w];
+            break;
+        case 0x56: // LD D, (IX+d)
+            w = (int8_t)fetchOperand();
+            d = memory[ix+w];
+            break;
+        case 0x5E: // LD E, (IX+d)
+            w = (int8_t)fetchOperand();
+            e = memory[ix+w];
+            break;
+        case 0x66: // LD H, (IX+d)
+            w = (int8_t)fetchOperand();
+            h = memory[ix+w];
+            break;
+        case 0x70: // LD (IX+d), B
+            w = (int8_t)fetchOperand();
+            memory[ix+w] = b;
+            break;
+        case 0x71: // LD (IX+d), C
+            w = (int8_t)fetchOperand();
+            memory[ix+w] = c;
+            break;
+        case 0x72: // LD (IX+d), D
+            w = (int8_t)fetchOperand();
+            memory[ix+w] = d;
+            break;
+        case 0x73: // LD (IX+d), E
+            w = (int8_t)fetchOperand();
+            memory[ix+w] = e;
+            break;
+        case 0x74: // LD (IX+d), H
+            w = (int8_t)fetchOperand();
+            memory[ix+w] = h;
+            break;
+        case 0x75: // LD (IX+d), L
+            w = (int8_t)fetchOperand();
+            memory[ix+w] = l;
+            break;
+        case 0x77: // LD (IX+d), A
+            w = (int8_t)fetchOperand();
+            memory[ix+w] = a;
+            break;
+        case 0x7e: // LD A, (IX+d)
+            w = (int8_t)fetchOperand();
+            a = memory[ix+w];
+            break;
+        case 0x86: // ADD A, (IX+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[ix+w], ALU_ADD8);
+            break;
+        case 0x8e: // ADC A, (IX+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[ix+w], ALU_ADC8);
+            break;
+        case 0x96: // SUB (IX+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[ix+w], ALU_SUB8);
+            break;
+        case 0x9e: // SBC (IX+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[ix+w], ALU_SBC8);
+            break;
+        case 0xA6: // AND (IX+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[ix+w], ALU_AND8);
+            break;
+        case 0xAE: // XOR (IX+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[ix+w], ALU_XOR8);
+            break;
+        case 0xB6: // OR (IX+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[ix+w], ALU_OR8);
+            break;
+        case 0xBE: // CP (IX+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[ix+w], ALU_CP8);
+            break;
+        case 0xCB: // IX Bit
+            cout << "IX BIT Instructions not implemented";
+            break;
+        case 0xE1: // POP IX
+            w = memory[sp];
+            sp++;
+            z = memory[sp];
+            sp++;
+            ix = z | (w << 8);
+            break;
+        case 0xE3: // EX (SP), IX
+            // TODO
+            break;
+        case 0xE5: // PUSH IX
+            sp--;
+            memory[sp] = ix & 0xFF;
+            sp--;
+            memory[sp] = ix >> 8;
+            break;
+        case 0xE9: // JP (IX)
+            pc = ix;
+            break;
+        case 0xF9: // LD SP, IX
+            sp = ix;
+            break;
         default:
             cout << "Invalid DD instruction: " << hex << (int)ins << " at PC: " << (int)pc << endl;
     }

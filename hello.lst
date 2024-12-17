@@ -1,5 +1,5 @@
 Sections:
-00: "seg0" (0-30)
+00: "seg0" (0-35)
 
 
 Source: "hello.asm"
@@ -7,38 +7,39 @@ Source: "hello.asm"
                         	     2: 
                         	     3: MAIN:
 00:0000 310020          	     4:     LD SP, 0x2000
-00:0003 212100          	     5:     LD HL, MSG  ; Load address of MSG
-00:0006 CD1800          	     6:     CALL PRINT
-00:0009 013412          	     7:     LD BC, 0x1234
-00:000C C5              	     8:     PUSH BC
-00:000D DD219D19        	     9:     LD IX, 0x199D
-00:0011 DD3401          	    10:     INC (IX+1)
-00:0014 C1              	    11:     POP BC
-00:0015 D301            	    12:     OUT (0x01), A    
-00:0017 76              	    13:     HALT
-                        	    14: 
-                        	    15: PRINT:
-00:0018 7E              	    16:     LD A, (HL)  ; Load char pointed by HL
-00:0019 FE00            	    17:     CP 0    ; Check if end
-00:001B C8              	    18:     RET Z   ; Return if end
-00:001C D300            	    19:     OUT (0x00), A   ; Print to stdout
-00:001E 23              	    20:     INC HL  ; Next char
-00:001F 18F7            	    21:     JR PRINT
-                        	    22: 
-                        	    23: MSG:
-00:0021 48656C6C6F20576F	    24:     .DB "Hello World!", 0DH, 0AH, 0
-00:0029 726C6421
-00:002D 0D
-00:002E 0A
-00:002F 00
+00:0003 212600          	     5:     LD HL, MSG  ; Load address of MSG
+00:0006 CD1D00          	     6:     CALL PRINT
+00:0009 3E30            	     7:     LD A, '0'
+00:000B D300            	     8:     OUT (0x00), A
+00:000D 320010          	     9:     LD (0x1000), A
+00:0010 DD21FF0F        	    10:     LD IX, 0xFFF
+00:0014 DD3401          	    11:     INC (IX+1)
+00:0017 3A0010          	    12:     LD A, (0x1000)
+00:001A D300            	    13:     OUT (0x00), A
+00:001C 76              	    14:     HALT
+                        	    15: 
+                        	    16: PRINT:
+00:001D 7E              	    17:     LD A, (HL)  ; Load char pointed by HL
+00:001E FE00            	    18:     CP 0    ; Check if end
+00:0020 C8              	    19:     RET Z   ; Return if end
+00:0021 D300            	    20:     OUT (0x00), A   ; Print to stdout
+00:0023 23              	    21:     INC HL  ; Next char
+00:0024 18F7            	    22:     JR PRINT
+                        	    23: 
+                        	    24: MSG:
+00:0026 48656C6C6F20576F	    25:     .DB "Hello World!", 0DH, 0AH, 0
+00:002E 726C6421
+00:0032 0D
+00:0033 0A
+00:0034 00
 
 
 Symbols by name:
 MAIN                             A:0000
-MSG                              A:0021
-PRINT                            A:0018
+MSG                              A:0026
+PRINT                            A:001D
 
 Symbols by value:
 0000 MAIN
-0018 PRINT
-0021 MSG
+001D PRINT
+0026 MSG
