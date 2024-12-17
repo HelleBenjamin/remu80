@@ -304,10 +304,14 @@ void Z80_Core::view_ram() {
 }
 
 void Z80_Core::view_program() {
-    for (int i = 0; i < program.size(); i++) {
-        cout << i << ": " << program[i] << endl;
+    int i = 0;
+    cout << "Z80 program viewer v1.0" << endl;
+    while (true) {
+        if (i > MEMORY_SIZE) break;
+        cout << hex << (unsigned)i << ": " << unsigned(memory[i]) << " " << unsigned(memory[++i]) << " " << unsigned(memory[++i]) << " " << unsigned(memory[++i]) << " " << unsigned(memory[++i]) << " " << unsigned(memory[++i]) << " " << unsigned(memory[++i]) << " " << unsigned(memory[++i]) << " " << unsigned(memory[++i]) << " " << unsigned(memory[++i]) << " " << unsigned(memory[++i]) << " " << unsigned(memory[++i]) << " " << unsigned(memory[++i]) << " " << unsigned(memory[++i]) << " " << unsigned(memory[++i])  << endl;
+        i++;
     }
-    system("pause");
+
 }
 vector<uint8_t> ExecutedInstructions;
 
@@ -610,8 +614,26 @@ void Z80_Core::fetchInstruction() {
 }
 
 uint8_t Z80_Core::inputHandler(uint8_t port) {
-    uint8_t input;
-    scanf("%hhx", &input);
+    uint8_t input = 0;
+
+    // Save the current terminal settings
+    struct termios oldt, newt;
+    tcgetattr(STDIN_FILENO, &oldt); // Get current terminal attributes
+    newt = oldt;
+
+    // Set the terminal to raw mode
+    newt.c_lflag &= ~(ICANON | ECHO); // Disable canonical mode and echo
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    // Read a single character without Enter
+    /*if (read(STDIN_FILENO, &input, 1) != 1) {
+        input = 0; // Fallback in case of read failure
+    }*/
+    read(STDIN_FILENO, &input, 1);
+
+    // Restore the terminal settings
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+
     return input;
 }
 
@@ -650,12 +672,12 @@ uint16_t Z80_Core::convToRegPair(uint8_t l, uint8_t h) {
 void Z80_Core::decode_execute(uint8_t instruction) {
     int8_t raddr = 0; // relative address, used for relative jumps
     uint16_t temp, temp2 = 0;
-    if (nop_watchdog > 10) { // prevent infinite loops, can be adjusted or disabled
+    if (nop_watchdog > 10 && !disableWatchdog) { // prevent infinite loops, can be adjusted or disabled
         cout << "Infinite loop detected at address: " << hex << pc << endl;
         exit(0);
     }
     ExecutedInstructions.push_back(instruction);
-    if(DEBUG) cout << "PC: " << hex << (int)pc << "  INS: " << Opcodes[instruction] << endl;
+    if(DEBUG) cout << "PC: " << hex << (unsigned)pc << "  INS: " << (unsigned)instruction << " " << Opcodes[instruction] << endl;
     switch (instruction) {
         case 0x00: // NOP
             if(ExecutedInstructions[pc-1] == 0x00) nop_watchdog++;

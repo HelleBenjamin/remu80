@@ -4,13 +4,12 @@ MAIN:
     LD SP, 0x2000
     LD HL, MSG  ; Load address of MSG
     CALL PRINT
-    LD A, '0'
-    OUT (0x00), A
-    LD (0x1000), A
-    LD IX, 0xFFF
-    INC (IX+1)
-    LD A, (0x1000)
-    OUT (0x00), A
+    LD HL, STRBUF
+    CALL GETSTR
+    CALL PRINT
+    LD BC, 0x1234
+    PUSH BC
+    POP AF
     HALT
 
 PRINT:
@@ -21,5 +20,29 @@ PRINT:
     INC HL  ; Next char
     JR PRINT
 
+GETINPUT:
+    IN A, (0x00)
+    CP 0
+    JR Z, GETINPUT
+    RET
+
+GETSTR:
+    PUSH HL ; Save string pointer
+    .loop1:
+        IN A, (0x00)
+        CP 0
+        JR Z, .loop1
+        CP 0AH ; Check if enter
+        JR Z, .end1
+        LD (HL), A
+        INC HL
+        JR .loop1
+    .end1:
+    LD (HL), 0
+    POP HL ; Restore string pointer
+    RET
+
+STRBUF .EQU 0x1000
+
 MSG:
-    .DB "Hello World!", 0DH, 0AH, 0
+    .BYTE "Hello World!", 0DH, 0AH, 0

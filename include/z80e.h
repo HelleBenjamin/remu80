@@ -11,6 +11,7 @@
 #include <unistd.h> //comment for windows
 #include <fstream>
 #include <cstdint>
+#include <termios.h>
 
 #define MEMORY_SIZE 0xffff
 
@@ -74,6 +75,7 @@
 
 using namespace std;
 
+
 class Z80_Core {
     public:
         bool DEBUG;
@@ -88,6 +90,7 @@ class Z80_Core {
 
         void testAlu(uint8_t& reg, uint8_t reg2, uint8_t ins);
         int nop_watchdog = 0; // prevent infinite loops
+        bool disableWatchdog = false;
     private:
         uint8_t ins;
         uint8_t memory[MEMORY_SIZE] = {0};

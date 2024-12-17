@@ -71,10 +71,17 @@ std::vector<uint8_t> loadHexToVector(const std::string& filename) {
             }
 
             // Extract data bytes
+            uint16_t address = hexToByte(addrStr.substr(0, 2)) << 8 | hexToByte(addrStr.substr(2, 2));
+
             for (size_t i = 0; i < byteCount; ++i) {
                 std::string byteStr = line.substr(8 + i * 2, 2);
                 uint8_t value = hexToByte(byteStr);
-                data.push_back(value);
+
+                if (address + i >= data.size()) {
+                    data.resize(address + i + 1, 0);
+                }
+
+                data[address + i] = value;
             }
 
             // Verify checksum
@@ -103,3 +110,4 @@ std::vector<uint8_t> loadHexToVector(const std::string& filename) {
 
     return data;
 }
+
