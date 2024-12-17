@@ -121,5 +121,6 @@ class Z80_Core {
         void ed_instruction(uint8_t ins); // extended instructions
         void cb_instruction(uint8_t ins); // bit instructions
         void dd_instruction(uint8_t ins); // ix prefix instructions
+        void fd_instruction(uint8_t ins); // iy prefix instructions
 };
 #endif

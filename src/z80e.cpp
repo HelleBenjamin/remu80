@@ -1506,7 +1506,8 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             }
             break;
         case 0xDD: // IX PREFIX
-            dd_instruction(fetchOperand());
+            w = fetchOperand();
+            dd_instruction(w);
             break;
         case 0xDE: // SBC A, n
             w = fetchOperand();
@@ -1712,7 +1713,8 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             }
             break;
         case 0xFD: // IY PREFIX
-            cout << "IY PREFIX NOT IMPLEMENTED" << endl;
+            w = fetchOperand();
+            fd_instruction(w);
             break;
         case 0xFE: // CP n
             w = fetchOperand();
@@ -2820,5 +2822,167 @@ void Z80_Core::dd_instruction(uint8_t ins) { // TODO: Implement undocumented ins
             break;
         default:
             cout << "Invalid DD instruction: " << hex << (int)ins << " at PC: " << (int)pc << endl;
+    }
+}
+
+void Z80_Core::fd_instruction(uint8_t ins) { // TODO: Implement undocumented instructions
+    switch (ins) {
+        case 0x09: // ADD iy, BC
+            alu(iy, convToRegPair(c, b), ALU_ADD16);
+            break;
+        case 0x19: // ADD iy, DE
+            alu(iy, convToRegPair(e, d), ALU_ADD16);
+            break;
+        case 0x21: // LD iy, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
+            iy = w | (z << 8);
+            break;
+        case 0x22: // LD (nn), iy
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
+            memory[w | (z << 8)] = l;
+            memory[(w | (z << 8)) + 1] = h;
+            break;
+        case 0x23: // INC iy
+            alu(iy, 0, ALU_INC16);
+            break;
+        case 0x29: // ADD iy, iy
+            alu(iy, iy, ALU_ADD16);
+            break;
+        case 0x2A: // LD iy, (nn)
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
+            iy = (w | (z << 8));
+            break;
+        case 0x2B: // DEC iy
+            alu(iy, 0, ALU_DEC16);
+            break;
+        case 0x34: // INC (iy+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)memory[iy+w], 0 , ALU_INC8);
+            break;
+        case 0x35: // DEC (iy+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)memory[iy+w], 0 , ALU_DEC8);
+            break;
+        case 0x36: // LD (iy+d), n
+            w = (int8_t)fetchOperand();
+            memory[iy+w] = fetchOperand();
+            break;
+        case 0x39: // ADD iy, SP
+            alu(iy, sp, ALU_ADD16);
+            break;
+        case 0x46: // LD B, (iy+d)
+            w = (int8_t)fetchOperand();
+            b = memory[iy+w];
+            break;
+        case 0x4E: // LD C, (iy+d)
+            w = (int8_t)fetchOperand();
+            c = memory[iy+w];
+            break;
+        case 0x56: // LD D, (iy+d)
+            w = (int8_t)fetchOperand();
+            d = memory[iy+w];
+            break;
+        case 0x5E: // LD E, (iy+d)
+            w = (int8_t)fetchOperand();
+            e = memory[iy+w];
+            break;
+        case 0x66: // LD H, (iy+d)
+            w = (int8_t)fetchOperand();
+            h = memory[iy+w];
+            break;
+        case 0x70: // LD (iy+d), B
+            w = (int8_t)fetchOperand();
+            memory[iy+w] = b;
+            break;
+        case 0x71: // LD (iy+d), C
+            w = (int8_t)fetchOperand();
+            memory[iy+w] = c;
+            break;
+        case 0x72: // LD (iy+d), D
+            w = (int8_t)fetchOperand();
+            memory[iy+w] = d;
+            break;
+        case 0x73: // LD (iy+d), E
+            w = (int8_t)fetchOperand();
+            memory[iy+w] = e;
+            break;
+        case 0x74: // LD (iy+d), H
+            w = (int8_t)fetchOperand();
+            memory[iy+w] = h;
+            break;
+        case 0x75: // LD (iy+d), L
+            w = (int8_t)fetchOperand();
+            memory[iy+w] = l;
+            break;
+        case 0x77: // LD (iy+d), A
+            w = (int8_t)fetchOperand();
+            memory[iy+w] = a;
+            break;
+        case 0x7e: // LD A, (iy+d)
+            w = (int8_t)fetchOperand();
+            a = memory[iy+w];
+            break;
+        case 0x86: // ADD A, (iy+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[iy+w], ALU_ADD8);
+            break;
+        case 0x8e: // ADC A, (iy+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[iy+w], ALU_ADC8);
+            break;
+        case 0x96: // SUB (iy+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[iy+w], ALU_SUB8);
+            break;
+        case 0x9e: // SBC (iy+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[iy+w], ALU_SBC8);
+            break;
+        case 0xA6: // AND (iy+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[iy+w], ALU_AND8);
+            break;
+        case 0xAE: // XOR (iy+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[iy+w], ALU_XOR8);
+            break;
+        case 0xB6: // OR (iy+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[iy+w], ALU_OR8);
+            break;
+        case 0xBE: // CP (iy+d)
+            w = (int8_t)fetchOperand();
+            alu((uint16_t&)a, memory[iy+w], ALU_CP8);
+            break;
+        case 0xCB: // iy Bit
+            cout << "iy BIT Instructions not implemented";
+            break;
+        case 0xE1: // POP iy
+            w = memory[sp];
+            sp++;
+            z = memory[sp];
+            sp++;
+            iy = z | (w << 8);
+            break;
+        case 0xE3: // EX (SP), iy
+            // TODO
+            break;
+        case 0xE5: // PUSH iy
+            sp--;
+            memory[sp] = iy & 0xFF;
+            sp--;
+            memory[sp] = iy >> 8;
+            break;
+        case 0xE9: // JP (iy)
+            pc = iy;
+            break;
+        case 0xF9: // LD SP, iy
+            sp = iy;
+            break;
+        default:
+            cout << "Invalid FD instruction: " << hex << (int)ins << " at PC: " << (int)pc << endl;
     }
 }
