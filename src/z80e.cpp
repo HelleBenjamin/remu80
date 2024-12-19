@@ -335,7 +335,7 @@ void Z80_Core::run() {
     while (!halt) {
         opcode = fetchOperand();
         decode_execute(opcode);
-        //usleep(30000);
+        usleep(30); // adjust delay
     }
     if (DEBUG) {
         printInfo();
@@ -746,7 +746,6 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             break;
         case 0x05: // DEC B
             alu((uint16_t&)b, 0, ALU_DEC8);
-            cout << "B: " << hex << (unsigned)b << endl;
             break;
         case 0x06: // LD B, n
             b = fetchOperand();
