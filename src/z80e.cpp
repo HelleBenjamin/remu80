@@ -668,6 +668,22 @@ uint16_t Z80_Core::convToRegPair(uint8_t l, uint8_t h) {
     return (uint16_t)l | (h << 8);
 }
 
+void Z80_Core::incRegPair(uint8_t& l, uint8_t& h) {
+    if (l == 0xFF) {
+        l = 0;
+        h++;
+    } else {
+        l++;
+    }
+}
+
+void Z80_Core::decRegPair(uint8_t& l, uint8_t& h) {
+    if (h == 0) {
+        l--;
+    } else {
+        h--;
+    }
+}
 
 void Z80_Core::decode_execute(uint8_t instruction) {
     int8_t raddr = 0; // relative address, used for relative jumps
@@ -1926,8 +1942,134 @@ void Z80_Core::ed_instruction(uint8_t ins) {
         case 0x7B: // LD (nn), SP
             temp = fetchOperand() | (fetchOperand() << 8);
             sp = (memory[temp] | memory[temp+1] << 8);
-        // TODO: IMPLEMENT REMAINING OPCODES
-
+        case 0xA0: // LDI
+            memory[e | (d << 8)] = memory[h | (l << 8)];
+            incRegPair(l, h);
+            incRegPair(e, d);
+            decRegPair(c, b);
+            if (b == 0 && c == 0) {
+                f |= FLAG_C;
+            } else f &= ~FLAG_C;
+            break;
+        case 0xA1: // CPI
+            alu((uint16_t&)a, memory[h | (l << 8)], ALU_CP8);
+            incRegPair(l, h);
+            incRegPair(e, d);
+            decRegPair(c, b);
+            if (b == 0 && c == 0) {
+                f |= FLAG_C;
+            } else f &= ~FLAG_C;
+            break;
+        case 0xA2: // INI
+            memory[e | (d << 8)] = inputHandler(c);
+            incRegPair(l, h);
+            alu((uint16_t&)b, 0, ALU_DEC8);
+            break;
+        case 0xA3: // OUTI
+            outputHandler(memory[h | (l << 8)], c);
+            incRegPair(l, h);
+            alu((uint16_t&)b, 0, ALU_DEC8);
+            break;
+        case 0xA8: // LDD
+            memory[e | (d << 8)] = memory[h | (l << 8)];
+            decRegPair(l, h);
+            decRegPair(e, d);
+            decRegPair(c, b);
+            if (b == 0 && c == 0) {
+                f |= FLAG_C;
+            } else f&= ~FLAG_C;
+            break;
+        case 0xA9: // CPD
+            alu((uint16_t&)a, memory[h | (l << 8)], ALU_CP8);
+            decRegPair(l, h);
+            decRegPair(e, d);
+            decRegPair(c, b);
+            if (b == 0 && c == 0) {
+                f |= FLAG_C;
+            } else f &= ~FLAG_C;
+            break;
+        case 0xAA: // IND
+            memory[e | (d << 8)] = inputHandler(c);
+            decRegPair(l, h);
+            alu((uint16_t&)b, 0, ALU_DEC8);
+            break;
+        case 0xAB: // OUTD
+            outputHandler(memory[h | (l << 8)], c);
+            decRegPair(l, h);
+            alu((uint16_t&)b, 0, ALU_DEC8);
+            break;
+        case 0xB0: // LDIR
+            while (b != 0 || c != 0) {
+                memory[e | (d << 8)] = memory[h | (l << 8)];
+                incRegPair(l, h);
+                incRegPair(e, d);
+                decRegPair(c, b);
+                if (b == 0 && c == 0) {
+                    f |= FLAG_C;
+                } else f &= ~FLAG_C;
+            }
+            break;
+        case 0xB1: // CPIR
+            while (b != 0 || c != 0 || (f & FLAG_Z) == 0) {
+                alu((uint16_t&)a, memory[h | (l << 8)], ALU_CP8);
+                incRegPair(l, h);
+                incRegPair(e, d);
+                decRegPair(c, b);
+                if (b == 0 && c == 0) {
+                    f |= FLAG_C;
+                } else f &= ~FLAG_C;
+            }
+            break;
+        case 0xB2: // INIR
+            while (b != 0 || c != 0) {
+                memory[e | (d << 8)] = inputHandler(c);
+                incRegPair(l, h);
+                alu((uint16_t&)b, 0, ALU_DEC8);
+            }
+            break;
+        case 0xB3: // OUTIR
+            while (b != 0 || c != 0 || (f & FLAG_Z) == 0) {
+                outputHandler(memory[h | (l << 8)], c);
+                incRegPair(l, h);
+                alu((uint16_t&)b, 0, ALU_DEC8);
+            }
+            break;
+        case 0xB4: // LDDR
+            while (b != 0 || c != 0) {
+                memory[e | (d << 8)] = memory[h | (l << 8)];
+                decRegPair(l, h);
+                decRegPair(e, d);
+                decRegPair(c, b);
+                if (b == 0 && c == 0) {
+                    f |= FLAG_C;
+                } else f &= ~FLAG_C;
+            }
+            break;
+        case 0xB5: // CPDR
+            while (b != 0 || c != 0 || (f & FLAG_Z) == 0) {
+                alu((uint16_t&)a, memory[h | (l << 8)], ALU_CP8);
+                decRegPair(l, h);
+                decRegPair(e, d);
+                decRegPair(c, b);
+                if (b == 0 && c == 0) {
+                    f |= FLAG_C;
+                } else f &= ~FLAG_C;
+            }
+            break;
+        case 0xB6: // INDR
+            while (b != 0 || c != 0) {
+                memory[e | (d << 8)] = inputHandler(c);
+                decRegPair(l, h);
+                alu((uint16_t&)b, 0, ALU_DEC8);
+            }
+            break;
+        case 0xB7: // OUTDR
+            while (b != 0 || c != 0 || (f & FLAG_Z) == 0) {
+                outputHandler(memory[h | (l << 8)], c);
+                decRegPair(l, h);
+                alu((uint16_t&)b, 0, ALU_DEC8);
+            }
+            break;
         default:
             cout << "Invalid MISC instruction: " << hex << (int)ins << " at PC: " << (int)pc << endl;
             break;

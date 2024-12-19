@@ -1,5 +1,5 @@
 Sections:
-00: "org0001:0" (0-4A)
+00: "seg0" (0-7C)
 
 
 Source: "hello.asm"
@@ -7,68 +7,117 @@ Source: "hello.asm"
                         	     2: 
                         	     3: MAIN:
 00:0000 310020          	     4:     LD SP, 0x2000
-00:0003 213B00          	     5:     LD HL, MSG  ; Load address of MSG
-00:0006 CD1800          	     6:     CALL PRINT
-00:0009 210010          	     7:     LD HL, STRBUF
-00:000C CD2800          	     8:     CALL GETSTR
-00:000F CD1800          	     9:     CALL PRINT
-00:0012 013412          	    10:     LD BC, 0x1234
-00:0015 C5              	    11:     PUSH BC
-00:0016 F1              	    12:     POP AF
-00:0017 76              	    13:     HALT
-                        	    14: 
-                        	    15: PRINT:
-00:0018 7E              	    16:     LD A, (HL)  ; Load char pointed by HL
-00:0019 FE00            	    17:     CP 0    ; Check if end
-00:001B C8              	    18:     RET Z   ; Return if end
-00:001C D300            	    19:     OUT (0x00), A   ; Print to stdout
-00:001E 23              	    20:     INC HL  ; Next char
-00:001F 18F7            	    21:     JR PRINT
+00:0003 217600          	     5:     LD HL, TESTMSG  ; Load address of TESTMSG
+00:0006 CD2000          	     6:     CALL PRINT
+00:0009 CD4900          	     7:     CALL GETSTR_SIZE
+00:000C 79              	     8:     LD A, C
+00:000D C630            	     9:     ADD A, '0' ; Convert to ASCII
+00:000F D300            	    10:     OUT (0x00), A
+00:0011 CD1500          	    11:     CALL NEWLINE
+00:0014 76              	    12:     HALT
+                        	    13: 
+                        	    14: NEWLINE:
+00:0015 F5              	    15:     PUSH AF
+00:0016 3E0D            	    16:     LD A, 0x0D
+00:0018 D300            	    17:     OUT (0x00), A
+00:001A 3E0A            	    18:     LD A, 0x0A
+00:001C D300            	    19:     OUT (0x00), A
+00:001E F1              	    20:     POP AF
+00:001F C9              	    21:     RET
                         	    22: 
-                        	    23: GETINPUT:
-00:0021 DB00            	    24:     IN A, (0x00)
-00:0023 FE00            	    25:     CP 0
-00:0025 28FA            	    26:     JR Z, GETINPUT
-00:0027 C9              	    27:     RET
-                        	    28: 
-                        	    29: GETSTR:
-00:0028 E5              	    30:     PUSH HL
-                        	    31:     .loop1:
-00:0029 DB00            	    32:         IN A, (0x00)
-00:002B FE00            	    33:         CP 0
-00:002D 28FA            	    34:         JR Z, .loop1
-00:002F FE0A            	    35:         CP 0AH ; Check if enter
-00:0031 2804            	    36:         JR Z, .end1
-00:0033 77              	    37:         LD (HL), A
-00:0034 23              	    38:         INC HL
-00:0035 18F2            	    39:         JR .loop1
-                        	    40:     .end1:
-00:0037 3600            	    41:     LD (HL), 0
-00:0039 E1              	    42:     POP HL
-00:003A C9              	    43:     RET
-                        	    44: 
-                        	    45: STRBUF .EQU 0x1000
-                        	    46: 
-                        	    47: MSG:
-00:003B 48656C6C6F20576F	    48:     .BYTE "Hello World!", 0DH, 0AH, 0
-00:0043 726C6421
-00:0047 0D
-00:0048 0A
-00:0049 00
+                        	    23: PRINT:
+00:0020 E5              	    24:     PUSH HL
+                        	    25: 
+                        	    26:     .printloop:
+00:0021 7E              	    27:     LD A, (HL)  ; Load char pointed by HL
+00:0022 FE00            	    28:     CP 0    ; Check if end
+00:0024 2805            	    29:     JR Z, .printend  ; Return if end
+00:0026 D300            	    30:     OUT (0x00), A   ; Print to stdout
+00:0028 23              	    31:     INC HL  ; Next char
+00:0029 18F6            	    32:     JR .printloop
+                        	    33: 
+                        	    34:     .printend:
+00:002B E1              	    35:     POP HL
+00:002C C9              	    36:     RET
+                        	    37: 
+                        	    38: GETINPUT:
+00:002D F5              	    39:     PUSH AF
+00:002E DB00            	    40:     IN A, (0x00)
+00:0030 FE00            	    41:     CP 0
+00:0032 28F9            	    42:     JR Z, GETINPUT
+00:0034 F1              	    43:     POP AF
+00:0035 C9              	    44:     RET
+                        	    45: 
+                        	    46: GETSTR:
+00:0036 E5              	    47:     PUSH HL ; Save string pointer
+                        	    48:     .loop1:
+00:0037 DB00            	    49:         IN A, (0x00)
+00:0039 FE00            	    50:         CP 0
+00:003B 28FA            	    51:         JR Z, .loop1
+00:003D FE0A            	    52:         CP 0AH ; Check if enter
+00:003F 2804            	    53:         JR Z, .end1
+00:0041 77              	    54:         LD (HL), A
+00:0042 23              	    55:         INC HL
+00:0043 18F2            	    56:         JR .loop1
+                        	    57:     .end1:
+00:0045 3600            	    58:     LD (HL), 0
+00:0047 E1              	    59:     POP HL ; Restore string pointer
+00:0048 C9              	    60:     RET
+                        	    61: 
+                        	    62: GETSTR_SIZE:
+00:0049 E5              	    63:     PUSH HL ; Save string pointer
+00:004A 010000          	    64:     LD BC, 0
+                        	    65:     .loop2:
+00:004D 7E              	    66:         LD A, (HL)
+00:004E FE00            	    67:         CP 0 ; Check if end
+00:0050 2804            	    68:         JR Z, .end2
+00:0052 23              	    69:         INC HL
+00:0053 03              	    70:         INC BC ; Size in BC
+00:0054 18F7            	    71:         JR .loop2
+                        	    72:     .end2:
+00:0056 E1              	    73:     POP HL ; Restore string pointer
+00:0057 03              	    74:     INC BC ; String size + terminator
+00:0058 C9              	    75:     RET
+                        	    76: 
+                        	    77: 
+                        	    78: STRBUF .EQU 0x1000
+                        	    79: 
+                        	    80: MSG:
+00:0059 48656C6C6F20576F	    81:     .BYTE "Hello World!", 0DH, 0AH, 0
+00:0061 726C6421
+00:0065 0D
+00:0066 0A
+00:0067 00
+                        	    82: MSG2:
+00:0068 436F706965642064	    83:     .BYTE "Copied data", 0DH, 0AH, 0
+00:0070 617461
+00:0073 0D
+00:0074 0A
+00:0075 00
+                        	    84: 
+                        	    85: TESTMSG:
+00:0076 48656C6C6F      	    86:     .BYTE "Hello", 0
+00:007B 00
 
 
 Symbols by name:
-GETINPUT                         A:0021
-GETSTR                           A:0028
+GETINPUT                         A:002D
+GETSTR                           A:0036
+GETSTR_SIZE                      A:0049
 MAIN                             A:0000
-MSG                              A:003B
-PRINT                            A:0018
-STRBUF                           E:1000
+MSG                              A:0059
+MSG2                             A:0068
+NEWLINE                          A:0015
+PRINT                            A:0020
+TESTMSG                          A:0076
 
 Symbols by value:
 0000 MAIN
-0018 PRINT
-0021 GETINPUT
-0028 GETSTR
-003B MSG
-1000 STRBUF
+0015 NEWLINE
+0020 PRINT
+002D GETINPUT
+0036 GETSTR
+0049 GETSTR_SIZE
+0059 MSG
+0068 MSG2
+0076 TESTMSG

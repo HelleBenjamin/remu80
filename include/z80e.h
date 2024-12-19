@@ -119,6 +119,8 @@ class Z80_Core {
         void interruptHandler();
         void swapRegs(uint8_t& temp1, uint8_t& temp2);
         uint16_t convToRegPair(uint8_t l, uint8_t h); //used for 16-bit operations
+        void incRegPair(uint8_t& l, uint8_t& h);
+        void decRegPair(uint8_t& l, uint8_t& h);
         void decode_execute(uint8_t instruction);
 
         void ed_instruction(uint8_t ins); // extended instructions
