@@ -335,7 +335,7 @@ void Z80_Core::run() {
     while (!halt) {
         opcode = fetchOperand();
         decode_execute(opcode);
-        //Sleep(10);
+        //usleep(30000);
     }
     if (DEBUG) {
         printInfo();
@@ -613,22 +613,32 @@ void Z80_Core::fetchInstruction() {
     //cout << "INS: " << ins << endl; // for debugging
 }
 
+#include <fcntl.h>
+
 uint8_t Z80_Core::inputHandler(uint8_t port) {
     uint8_t input = 0;
 
-    if (port = 0x00){ // Stdin
-        struct termios oldt, newt; // Save the terminal settings
-        tcgetattr(STDIN_FILENO, &oldt);
+    if (port == 0x00){ // Stdin
+        struct termios oldt, newt;
+        tcgetattr(STDIN_FILENO, &oldt);  // Save the terminal settings
         newt = oldt;
+        newt.c_lflag &= ~(ICANON | ECHO);  // Disable canonical mode and echo
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);  // Apply new settings
 
-        newt.c_lflag &= ~(ICANON | ECHO); // Disable canonical mode and echo
-        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+        int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+        fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);  // Set non-blocking
 
-        read(STDIN_FILENO, &input, 1);
+        char ch;
+        ssize_t bytesRead = read(STDIN_FILENO, &ch, 1);  // Attempt to read input
+        if (bytesRead > 0) {
+            input = static_cast<uint8_t>(ch);
+            //receiveData(static_cast<uint8_t>(ch));  // Forward character to RX
+            //std::cout << "Received char: " << ch << " (0x" << std::hex << +ch << ")" << std::dec << std::endl;
+        }
 
-        tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // Restore the terminal settings
+        fcntl(STDIN_FILENO, F_SETFL, flags);  // Restore blocking mode
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);  // Restore terminal settings
     }
-
     return input;
 }
 
@@ -645,12 +655,20 @@ uint8_t Z80_Core::outputHandler(uint8_t &reg, uint8_t port) {
         default:
             break;
     }
-
     return reg;
 }
 
 void Z80_Core::interruptHandler() {
-    // TODO: implement interrupts
+    switch (im){
+        case 0: // TODO
+            break;
+        case 1: // RST 38H
+            push(pc);
+            pc = 0x38;
+            break;
+        case 2: // TODO
+            break;
+    }
 }
 
 void Z80_Core::swapRegs(uint8_t& temp1, uint8_t& temp2) {
@@ -678,6 +696,21 @@ void Z80_Core::decRegPair(uint8_t& l, uint8_t& h) {
     } else {
         h--;
     }
+}
+
+void Z80_Core::push(uint16_t reg){
+    sp--;
+    memory[sp] = (reg >> 8); // high byte
+    sp--;
+    memory[sp] = reg & 0xFF; // low byte
+}
+
+uint16_t Z80_Core::pop() {
+    uint16_t reg = memory[sp];
+    sp++;
+    reg |= memory[sp] << 8;
+    sp++;
+    return reg;
 }
 
 void Z80_Core::decode_execute(uint8_t instruction) {
@@ -712,7 +745,8 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             alu((uint16_t&)b, (uint16_t&)w, ALU_INC8);
             break;
         case 0x05: // DEC B
-            alu((uint16_t&)b, (uint16_t&)w, ALU_DEC8);
+            alu((uint16_t&)b, 0, ALU_DEC8);
+            cout << "B: " << hex << (unsigned)b << endl;
             break;
         case 0x06: // LD B, n
             b = fetchOperand();
@@ -755,10 +789,10 @@ void Z80_Core::decode_execute(uint8_t instruction) {
         case 0x0F: // RRCA
             alu((uint16_t&)a, (uint16_t&)f, ALU_RRC8);
             break;
-        case 0x10: // DJNZ nn
+        case 0x10: // DJNZ d
             b--;
             if (b != 0) {
-                pc = pc + fetchOperand() | (fetchOperand() << 8);
+                pc = pc + fetchOperand();
             }
             break;
         case 0x11: // LD DE, nn
@@ -822,8 +856,8 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             alu((uint16_t&)a, (uint16_t&)f, ALU_RR8);
             break;
         case 0x20: // JR NZ, n
+            raddr = (int8_t)fetchOperand();
             if (!(f & FLAG_Z)){
-                raddr = (int8_t)fetchOperand();
                 pc = pc + raddr;
             }
             break;
@@ -832,8 +866,10 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             h = fetchOperand();
             break;
         case 0x22: // LD (nn), HL
-            memory[fetchOperand() | (fetchOperand() << 8)] = l;
-            memory[fetchOperand() | (fetchOperand() << 8) + 1] = h;
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
+            memory[w | (z << 8)] = l;
+            memory[w | (z << 8) + 1] = h;
             break;
         case 0x23: // INC HL
             if (l == 0xFF) {
@@ -856,8 +892,8 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             //TODO
             break;
         case 0x28: // JR Z, n
+            raddr = (int8_t)fetchOperand();
             if (f & FLAG_Z) {
-                raddr = (int8_t)fetchOperand();
                 pc = pc + raddr;
             }
             break;
@@ -869,8 +905,10 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             h = temp >> 8;
             break;
         case 0x2A: // LD HL, (nn)
-            l = memory[fetchOperand() | (fetchOperand() << 8)];
-            h = memory[fetchOperand() | (fetchOperand() << 8) + 1];
+            w = fetchOperand();
+            z = fetchOperand();
+            l = memory[w | (z << 8)];
+            h = memory[w | (z << 8) + 1];
             break;
         case 0x2B: // DEC HL
             if (h == 0) {
@@ -893,8 +931,8 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             f ^= (1 << 4) | (1 << 1);
             break;
         case 0x30: // JR NC, n
+            raddr = (int8_t)fetchOperand();
             if (!(f & FLAG_C)) {
-                raddr = (int8_t)fetchOperand();
                 pc = pc + raddr;
             }
             break;
@@ -922,8 +960,8 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             f |= 1;
             break;
         case 0x38: // JR C, n
+            raddr = (int8_t)fetchOperand();
             if (f & FLAG_C) {
-                raddr = (int8_t)fetchOperand();
                 pc = pc + raddr;
             }
             break;
@@ -1339,11 +1377,11 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             break;
         case 0xC0: // RET NZ
             if (!(f & FLAG_Z)) {
-                w = memory[sp]; // high byte
+                w = memory[sp]; // low byte
                 sp++;
-                z = memory[sp]; // low byte
+                z = memory[sp]; // high byte
                 sp++;
-                pc = z | (w << 8);
+                pc = w | (z >> 8);
             }
             break;
         case 0xC1: // POP BC
@@ -1353,21 +1391,21 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             sp++;
             break;
         case 0xC2: // JP NZ, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if (!(f & FLAG_Z)) {
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                pc = (w | (z << 8));
             }
             break;
         case 0xC3: // JP nn
             pc = (fetchOperand() | (fetchOperand() << 8));
             break;
         case 0xC4: // CALL NZ, nn
-            pc += 3;
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if (!(f & FLAG_Z)) {
-                sp--;
-                memory[sp] = pc >> 8; // high byte
-                sp--;
-                memory[sp] = pc & 0xFF; // low byte
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                push(pc);
+                pc = (w | (z << 8));
             }
             break;
         case 0xC5: // PUSH BC
@@ -1381,31 +1419,24 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             alu((uint16_t&)a, (uint16_t&)w, ALU_ADD8);
             break;
         case 0xC7: // RST 00h
-            sp--;
-            memory[sp] = pc & 0xFF; // low byte
-            sp--;
-            memory[sp] = pc >> 8; // high byte
+            push(pc);
             pc = 0x00;
             break;
         case 0xC8: // RET Z
             if(f & FLAG_Z){
-                w = memory[sp]; // high byte
-                sp++;
-                z = memory[sp]; // low byte
-                sp++;
-                pc = z | (w << 8);
+                pc = pop();
             }
             break;
         case 0xC9: // RET
-            w = memory[sp]; // high byte
-            sp++;
-            z = memory[sp]; // low byte
-            sp++;
-            pc = z | (w << 8);
+            //cout << "Stack:" << hex << (unsigned)memory[sp+1] << (unsigned)memory[sp] << endl;
+            pc = pop();
+            //cout << "Popped PC: " << hex << (unsigned)pc << endl;
             break;
         case 0xCA: // JP Z, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if(f & FLAG_Z){
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                pc = (w | (z << 8));
             }
             break;
         case 0xCB: //BIT INSTRUCTION
@@ -1413,23 +1444,19 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             ed_instruction(w);
             break;
         case 0xCC: // CALL Z, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if(f & FLAG_Z){
-                sp--;
-                memory[sp] = pc & 0xFF; // low byte
-                sp--;
-                memory[sp] = pc >> 8; // high byte
-                w = fetchOperand(); // low byte
-                z = fetchOperand(); // high byte
+                push(pc);
                 pc = (w | (z << 8));
             }
             break;
         case 0xCD: // CALL nn
             w = fetchOperand(); // low byte
             z = fetchOperand(); // high byte
-            sp--;
-            memory[sp] = pc & 0xFF; // low byte
-            sp--;
-            memory[sp] = pc >> 8; // high byte
+            push(pc);
+            //cout << "Saving PC: " << hex << (unsigned)pc << endl;
+            //ycout << "Saved PC: " << hex << (unsigned)memory[sp+1] << (unsigned)memory[sp] << endl;
             pc = (w | (z << 8));
             break;
         case 0xCE: // ADC A, n
@@ -1437,19 +1464,12 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             alu((uint16_t&)a, (uint16_t&)w, ALU_ADC8);
             break;
         case 0xCF: // RST 08h
-            sp--;
-            memory[sp] = pc & 0xFF; // low byte
-            sp--;
-            memory[sp] = pc >> 8; // high byte
+            push(pc);
             pc = 0x08;
             break;
         case 0xD0: // RET NC
             if(!(f & FLAG_C)){
-                w = memory[sp]; // high byte
-                sp++;
-                z = memory[sp]; // low byte
-                sp++;
-                pc = z | (w << 8);
+                pc = pop();
             }
             break;
         case 0xD1: // POP DE
@@ -1459,8 +1479,10 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             sp++;
             break;
         case 0xD2: // JP NC, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if(!(f & FLAG_C)){
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                pc = (w | (z << 8));
             }
             break;
         case 0xD3: // OUT (n), A
@@ -1468,13 +1490,10 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             outputHandler(a,w);
             break;
         case 0xD4: // CALL NC, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if(!(f & FLAG_C)){
-                sp--;
-                memory[sp] = pc & 0xFF; // low byte
-                sp--;
-                memory[sp] = pc >> 8; // high byte
-                w = fetchOperand(); // low byte
-                z = fetchOperand(); // high byte
+                push(pc);
                 pc = (w | (z << 8));
             }
             break;
@@ -1489,19 +1508,12 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             alu((uint16_t&)a, (uint16_t&)w, ALU_SUB8);
             break;
         case 0xD7: // RST 10h
-            sp--;
-            memory[sp] = pc & 0xFF; // low byte
-            sp--;
-            memory[sp] = pc >> 8; // high byte
+            push(pc);
             pc = 0x10;
             break;
         case 0xD8: // RET C
             if(f & FLAG_C){
-                w = memory[sp]; // high byte
-                sp++;
-                z = memory[sp]; // low byte
-                sp++;
-                pc = z | (w << 8);
+                pc = pop();
             }
             break;
         case 0xD9: // EXX
@@ -1519,8 +1531,10 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             swapRegs(l, w);
             break;
         case 0xDA: // JP C, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if(f & FLAG_C){
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                pc = (w | (z << 8));
             }
             break;
         case 0xDB: // IN A, (n)
@@ -1528,13 +1542,10 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             a = inputHandler(w);
             break;
         case 0xDC: // CALL C, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if(f & FLAG_C){
-                sp--;
-                memory[sp] = pc & 0xFF; // low byte
-                sp--;
-                memory[sp] = pc >> 8; // high byte
-                w = fetchOperand(); // low byte
-                z = fetchOperand(); // high byte
+                push(pc);
                 pc = (w | (z << 8));
             }
             break;
@@ -1547,19 +1558,12 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             alu((uint16_t&)a, (uint16_t&)w, ALU_SBC8);
             break;
         case 0xDF: // RST 18h
-            sp--;
-            memory[sp] = pc & 0xFF; // low byte
-            sp--;
-            memory[sp] = pc >> 8; // high byte
+            push(pc);
             pc = 0x18;
             break;
         case 0xE0: // RET PO
             if(!(f & 0x04)){
-                w = memory[sp]; // high byte
-                sp++;
-                z = memory[sp]; // low byte
-                sp++;
-                pc = z | (w << 8);
+                pc = pop();
             }
             break;
         case 0xE1: // POP HL
@@ -1569,8 +1573,10 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             sp++;
             break;
         case 0xE2: // JP PO, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if(!(f & 0x04)){
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                pc = (w | (z << 8));
             }
             break;
         case 0xE3: // EX (SP), HL
@@ -1583,48 +1589,37 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             h = z;
             break;
         case 0xE4: // CALL PO, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if(!(f & 0x04)){
-                sp--;
-                memory[sp] = pc & 0xFF; // low byte
-                sp--;
-                memory[sp] = pc >> 8; // high byte
-                w = fetchOperand(); // low byte
-                z = fetchOperand(); // high byte
+                push(pc);
                 pc = (w | (z << 8));
             }
             break;
         case 0xE5: // PUSH HL
-            sp--;
-            memory[sp] = h;
-            sp--;
-            memory[sp] = l;
+            push((uint16_t)(l | (h << 8)));
             break;
         case 0xE6: // AND n
             w = fetchOperand();
             alu((uint16_t&)a, (uint16_t&)w, ALU_AND8);
             break;
         case 0xE7: // RST 20h
-            sp--;
-            memory[sp] = pc & 0xFF; // low byte
-            sp--;
-            memory[sp] = pc >> 8; // high byte
+            push(pc);
             pc = 0x20;
             break;
         case 0xE8: // RET PE
             if(!(f & 0x04)){
-                w = memory[sp]; // high byte
-                sp++;
-                z = memory[sp]; // low byte
-                sp++;
-                pc = z | (w << 8);
+                pc = pop();
             }
             break;
         case 0xE9: // JP (HL)
             pc = l | (h << 8);
             break;
         case 0xEA: // JP PE, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if(!(f & 0x04)){
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                pc = (w | (z << 8));
             }
             break;
         case 0xEB: // EX DE, HL
@@ -1638,13 +1633,10 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             swapRegs (l, w);
             break;
         case 0xEC: // CALL PE, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if((f & 0x04)){
-                sp--;
-                memory[sp] = pc & 0xFF; // low byte
-                sp--;
-                memory[sp] = pc >> 8; // high byte
-                w = fetchOperand(); // low byte
-                z = fetchOperand(); // high byte
+                push(pc);
                 pc = (w | (z << 8));
             }
             break;
@@ -1657,19 +1649,12 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             alu((uint16_t&)a, (uint16_t&)w, ALU_XOR8);
             break;
         case 0xEF: // RST 28h
-            sp--;
-            memory[sp] = pc & 0xFF; // low byte
-            sp--;
-            memory[sp] = pc >> 8; // high byte
+            push(pc);
             pc = 0x28;
             break;
         case 0xF0: // RET P
             if(!(f & 0x80)){
-                w = memory[sp]; // high byte
-                sp++;
-                z = memory[sp]; // low byte
-                sp++;
-                pc = z | (w << 8);
+                pc = pop();
             }
             break;
         case 0xF1: // POP AF
@@ -1679,21 +1664,20 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             sp++;
             break;
         case 0xF2: // JP P, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if(!(f & 0x80)){
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                pc = (w | (z << 8));
             }
             break;
         case 0xF3: // DI
             iff1, iff2 = false;
             break;
         case 0xF4: // CALL P, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if(!(f & 0x80)){
-                sp--;
-                memory[sp] = pc & 0xFF; // low byte
-                sp--;
-                memory[sp] = pc >> 8; // high byte
-                w = fetchOperand(); // low byte
-                z = fetchOperand(); // high byte
+                push(pc);
                 pc = (w | (z << 8));
             }
             break;
@@ -1708,40 +1692,32 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             alu((uint16_t&)a, (uint16_t&)w, ALU_OR8);
             break;
         case 0xF7: // RST 30h
-            sp--;
-            memory[sp] = pc & 0xFF; // low byte
-            sp--;
-            memory[sp] = pc >> 8; // high byte
+            push(pc);
             pc = 0x30;
             break;
         case 0xF8: // RET M
             if(!(f & 0x80)){
-                w = memory[sp]; // high byte
-                sp++;
-                z = memory[sp]; // low byte
-                sp++;
-                pc = z | (w << 8);
+                pc = pop();
             }
             break;
         case 0xF9: // LD SP, HL
             sp = l | (h << 8);
             break;
         case 0xFA: // JP M, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if((f & 0x80)){
-                pc = (fetchOperand() | (fetchOperand() << 8));
+                pc = (w | (z << 8));
             }
             break;
         case 0xFB: // EI
             iff1, iff2 = true;
             break;
         case 0xFC: // CALL M, nn
+            w = fetchOperand(); // low byte
+            z = fetchOperand(); // high byte
             if((f & 0x80)){
-                sp--;
-                memory[sp] = pc & 0xFF; // low byte
-                sp--;
-                memory[sp] = pc >> 8; // high byte
-                w = fetchOperand(); // low byte
-                z = fetchOperand(); // high byte
+                push(pc);
                 pc = (w | (z << 8));
             }
             break;
@@ -1754,10 +1730,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             alu((uint16_t&)a, (uint16_t&)w, ALU_CP8);
             break;
         case 0xFF: // RST 38h
-            sp--;
-            memory[sp] = pc & 0xFF; // low byte
-            sp--;
-            memory[sp] = pc >> 8; // high byte
+            push(pc);
             pc = 0x38;
             break;
         default:
@@ -1792,11 +1765,7 @@ void Z80_Core::ed_instruction(uint8_t ins) {
             break;
         case 0x45: // RETN
             // Add more functionality later when interrupts are better implemented
-            w = memory[sp]; // high byte
-            sp++;
-            z = memory[sp]; // low byte
-            sp++;
-            pc = z | (w << 8);
+            pc = pop();
             iff1 = iff2;
             break;
         case 0x46: // IM 0
@@ -1824,12 +1793,7 @@ void Z80_Core::ed_instruction(uint8_t ins) {
             break;
         case 0x4D: // RETI
             // Add more functionality later when interrupts are better implemented
-            w = memory[sp]; // high byte
-            sp++;
-            z = memory[sp]; // low byte
-            sp++;
-            pc = z | (w << 8);
-            sp += 2;
+            pc = pop();
             iff1 = iff2;
             break;
         case 0x4F: // LD R, A

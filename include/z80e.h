@@ -91,6 +91,8 @@ class Z80_Core {
         void testAlu(uint8_t& reg, uint8_t reg2, uint8_t ins);
         int nop_watchdog = 0; // prevent infinite loops
         bool disableWatchdog = false;
+        void interruptHandler();
+
     private:
         uint8_t ins;
         uint8_t memory[MEMORY_SIZE] = {0};
@@ -110,22 +112,26 @@ class Z80_Core {
 
         bool isInput; 
 
+        uint8_t inputBuf;
+
         void alu(uint16_t& op1, uint16_t op2, uint8_t ins);
 
         uint8_t fetchOperand();
         void fetchInstruction();
         uint8_t inputHandler(uint8_t port);
         uint8_t outputHandler(uint8_t &reg, uint8_t port);
-        void interruptHandler();
         void swapRegs(uint8_t& temp1, uint8_t& temp2);
         uint16_t convToRegPair(uint8_t l, uint8_t h); //used for 16-bit operations
         void incRegPair(uint8_t& l, uint8_t& h);
         void decRegPair(uint8_t& l, uint8_t& h);
-        void decode_execute(uint8_t instruction);
+        void decode_execute(uint8_t instruction); // main instructions
+        void push(uint16_t reg);
+        uint16_t pop();
 
         void ed_instruction(uint8_t ins); // extended instructions
         void cb_instruction(uint8_t ins); // bit instructions
         void dd_instruction(uint8_t ins); // ix prefix instructions
         void fd_instruction(uint8_t ins); // iy prefix instructions
 };
+
 #endif

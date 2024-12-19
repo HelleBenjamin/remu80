@@ -10,7 +10,6 @@ int main(int argc, char *argv[]) {
             filename = argv[i + 1];
             vector<uint8_t> executable_program = loadHexToVector(filename);
             z80.loadProgram(executable_program);
-            z80.run();
         }
         if ((string(argv[i])).find("-d") == 0) { // debug mode
             z80.DEBUG = true;
@@ -28,6 +27,7 @@ int main(int argc, char *argv[]) {
             z80.disableWatchdog = true;
         }
     }
+    z80.run();
 
     return 0;
 }
