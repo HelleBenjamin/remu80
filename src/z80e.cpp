@@ -616,23 +616,18 @@ void Z80_Core::fetchInstruction() {
 uint8_t Z80_Core::inputHandler(uint8_t port) {
     uint8_t input = 0;
 
-    // Save the current terminal settings
-    struct termios oldt, newt;
-    tcgetattr(STDIN_FILENO, &oldt); // Get current terminal attributes
-    newt = oldt;
+    if (port = 0x00){ // Stdin
+        struct termios oldt, newt; // Save the terminal settings
+        tcgetattr(STDIN_FILENO, &oldt);
+        newt = oldt;
 
-    // Set the terminal to raw mode
-    newt.c_lflag &= ~(ICANON | ECHO); // Disable canonical mode and echo
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+        newt.c_lflag &= ~(ICANON | ECHO); // Disable canonical mode and echo
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
-    // Read a single character without Enter
-    /*if (read(STDIN_FILENO, &input, 1) != 1) {
-        input = 0; // Fallback in case of read failure
-    }*/
-    read(STDIN_FILENO, &input, 1);
+        read(STDIN_FILENO, &input, 1);
 
-    // Restore the terminal settings
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // Restore the terminal settings
+    }
 
     return input;
 }

@@ -7,6 +7,7 @@ Remu80 is a simple Z80 emulator written in C++. Its goal is to be a fully functi
 ## Features
 - Z80 instruction set (undocumented instructions will be added later)
 - Same registers as the original Z80
+- Port ```0x00``` is used for standard input and output
 
 ## How to use
 1. Compile the project using the command ```make```.
