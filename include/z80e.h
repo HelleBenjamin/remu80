@@ -73,6 +73,13 @@
 #define ALU_INC16 0x2D
 #define ALU_DEC16 0x2E
 
+
+#define ACIA_RECIEVE 0x00
+#define ACIA_TRANSMIT 0x01
+#define ACIA_READ_STATUS 0x02
+#define ACIA_WRITE_CONTROL 0x03
+#define ACIA_READ_DATA 0x04
+
 using namespace std;
 
 
@@ -92,6 +99,10 @@ class Z80_Core {
         int nop_watchdog = 0; // prevent infinite loops
         bool disableWatchdog = false;
         void interruptHandler();
+        uint8_t ACIA_6850(uint8_t op, uint8_t operand);
+        uint8_t ACIA_6850_Handler();
+        bool isPending;
+        uint8_t ACIA_status, ACIA_data, ACIA_control, ACIA_RDR;
 
     private:
         uint8_t ins;
@@ -126,7 +137,9 @@ class Z80_Core {
         void decRegPair(uint8_t& l, uint8_t& h);
         void decode_execute(uint8_t instruction); // main instructions
         void push(uint16_t reg);
+        void push_reg_pair(uint8_t l, uint8_t h);
         uint16_t pop();
+        void pop_reg_pair(uint8_t& l, uint8_t& h);
 
         void ed_instruction(uint8_t ins); // extended instructions
         void cb_instruction(uint8_t ins); // bit instructions

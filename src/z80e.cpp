@@ -1,5 +1,6 @@
 
 #include "../include/z80e.h"
+#include <fcntl.h>
 
 #define clear() printf("\033[H\033[J") // macro to clear the screen
 
@@ -7,7 +8,7 @@ using namespace std;
 
 vector<uint8_t> program;
 
-/*Z80 EMULATOR by Benjamin Helle (C) 2024*/
+/* Z80 EMULATOR by Benjamin Helle (C) 2024-2025 */
 
 /*
     FLAGS
@@ -325,7 +326,7 @@ void Z80_Core::reset() {
     f = 0;
     halt = false;
     isInput = false;
-    iff1, iff2 = false;
+    iff1 = iff2 = false;
 }
 
 void Z80_Core::run() {
@@ -335,7 +336,9 @@ void Z80_Core::run() {
     while (!halt) {
         opcode = fetchOperand();
         decode_execute(opcode);
-        usleep(30); // adjust delay
+        ACIA_6850_Handler();
+        if(isPending) interruptHandler();
+        usleep(500); // adjust delay
     }
     if (DEBUG) {
         printInfo();
@@ -346,6 +349,219 @@ void Z80_Core::run() {
     }
 }
 
+uint8_t Z80_Core::ACIA_6850(uint8_t op, uint8_t operand) {
+    /* OPERATIONS:
+        0 - Receive data
+        1 - Transmit data
+        2 - Read status register
+        3 - Write control register
+        4 - Check if input is available
+    */
+
+    /* STATUS REGISTER:
+        Bit 0 - RDRF (Read data register full)
+        Bit 1 - TDRE (Transmit data register empty)
+        Bit 2 - DCD (Data carrier detect)
+        Bit 3 - CTS (Clear to send)
+        Bit 4 - FE (Framing error)
+        Bit 5 - RO (Receiver overrun)
+        Bit 6 - PE (Parity error)
+        Bit 7 - IRQ
+    */
+
+    /* CONTROL REGISTER:
+        Bit 0-1 - Counter divider select (CDS1, CDS2)
+        Bit 2-4 - Word select (WS1, WS2, WS3)
+        Bit 5-6 - Transmit control (TC1, TC2)
+        Bit 7   - RIE (Receive interrupt enable)
+    */
+
+    char ch;
+    struct termios oldt, newt;
+    int flags;
+    ssize_t bytesRead;
+
+    switch (op) {
+        case 0: // Receive data
+            if (ACIA_status & 0x01) {
+                ACIA_status &= ~0x01;
+                return ACIA_RDR;
+            }
+            return 0;
+
+        case 1: // Transmit data
+            ACIA_status &= ~0x02;
+            printf("%c", operand);
+            fflush(stdout);
+            return 0;
+
+        case 2: // Read status register
+            return ACIA_status;
+
+        case 3: // Write control register
+            ACIA_control = operand;
+            return 0;
+
+        case 4: // Check if input is available
+            tcgetattr(STDIN_FILENO, &oldt); // Save terminal settings
+            newt = oldt;
+            newt.c_lflag &= ~(ICANON | ECHO); // Disable canonical mode and echo
+            tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+            flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+            fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK); // Set non-blocking mode
+
+            bytesRead = read(STDIN_FILENO, &ch, 1); // Try to read input
+            if (bytesRead > 0) {
+                ACIA_RDR = ch;
+                ACIA_status |= 0x01;
+                if (ACIA_control & 0x80) {
+                    interruptHandler();
+                }
+            } else {
+                ACIA_status &= ~0x01;
+            }
+
+            fcntl(STDIN_FILENO, F_SETFL, flags);
+            tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+            return (bytesRead > 0) ? 1 : 0;
+
+        default:
+            break;
+    }
+
+    return 0;
+}
+
+uint8_t Z80_Core::ACIA_6850_Handler() {
+    /* OPERATIONS:
+        0 - Receive data
+        1 - Transmit data
+        2 - Read status register
+        3 - Write control register
+        4 - Check if input is available
+    */
+
+    /* STATUS REGISTER:
+        Bit 0 - RDRF (Read data register full)
+        Bit 1 - TDRE (Transmit data register empty)
+        Bit 2 - DCD (Data carrier detect)
+        Bit 3 - CTS (Clear to send)
+        Bit 4 - FE (Framing error)
+        Bit 5 - RO (Receiver overrun)
+        Bit 6 - PE (Parity error)
+        Bit 7 - IRQ
+    */
+
+    /* CONTROL REGISTER:
+        Bit 0-1 - Counter divider select (CDS1, CDS2)
+        Bit 2-4 - Word select (WS1, WS2, WS3)
+        Bit 5-6 - Transmit control (TC1, TC2)
+        Bit 7   - RIE (Receive interrupt enable)
+    */
+
+    char ch;
+    struct termios oldt, newt;
+    int flags;
+    ssize_t bytesRead;
+
+    tcgetattr(STDIN_FILENO, &oldt); // Save terminal settings
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO); // Disable canonical mode and echo
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK); // Set non-blocking mode
+
+    bytesRead = read(STDIN_FILENO, &ch, 1); // Try to read input
+    if (bytesRead > 0) {
+        ACIA_RDR = ch;
+        ACIA_status |= 0x01;
+        if (ACIA_control & 0x80) {
+            //cout << "Interrupt pending, iff1: " << iff1 << " iff2: " << iff2  << endl;
+            isPending = true;
+        } else {
+            // Do nothing
+        }
+    } else {
+        isPending = false;
+    }
+
+    fcntl(STDIN_FILENO, F_SETFL, flags);
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+
+    return (bytesRead > 0) ? 1 : 0;
+}
+
+
+uint8_t Z80_Core::inputHandler(uint8_t port) {
+    uint8_t input = 0;
+
+    if (port == 0x00){ // Stdin
+        struct termios oldt, newt;
+        tcgetattr(STDIN_FILENO, &oldt);  // Save the terminal settings
+        newt = oldt;
+        newt.c_lflag &= ~(ICANON | ECHO);  // Disable canonical mode and echo
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);  // Apply new settings
+
+        int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+        fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);  // Set non-blocking
+
+        char ch;
+        ssize_t bytesRead = read(STDIN_FILENO, &ch, 1);  // Attempt to read input
+        if (bytesRead > 0) {
+            input = static_cast<uint8_t>(ch);
+        }
+
+        fcntl(STDIN_FILENO, F_SETFL, flags);
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    }
+    if (port == 0x80){ // ACIA 6850 Status Register
+        input = ACIA_6850(ACIA_READ_STATUS, 0);
+    }
+    if (port == 0x81){ // ACIA 6850 Data Register
+        input = ACIA_6850(ACIA_RECIEVE, 0);
+    }
+    return input;
+}
+
+uint8_t Z80_Core::outputHandler(uint8_t &reg, uint8_t port) {
+    switch (port) {
+        case 0x00: // stdout
+            printf("%c", reg);
+            break;
+        case 0x01: // debug
+            if (DEBUG) {
+                printInfo();
+            }
+            break;
+        case 0x80: // ACIA 6850 Control Register
+            ACIA_6850(ACIA_WRITE_CONTROL, reg);
+            break;
+        case 0x81: // ACIA 6850 Data Register
+            ACIA_6850(ACIA_TRANSMIT, reg);
+            break;
+        default:
+            break;
+    }
+    return reg;
+}
+
+void Z80_Core::interruptHandler() {
+    if (iff1 == 0) return;
+    iff1, iff2 = 0;
+    switch (im){
+        case 0: // TODO
+            break;
+        case 1: // RST 38H
+            push(pc);
+            pc = 0x38;
+            isPending = false;
+            break;
+        case 2: // TODO
+            break;
+    }
+}
 
 void Z80_Core::printCurrentState() {
     cout << "PC: " << pc << " SP: " << sp << " F: " << bitset<8>(f) << endl;
@@ -613,64 +829,6 @@ void Z80_Core::fetchInstruction() {
     //cout << "INS: " << ins << endl; // for debugging
 }
 
-#include <fcntl.h>
-
-uint8_t Z80_Core::inputHandler(uint8_t port) {
-    uint8_t input = 0;
-
-    if (port == 0x00){ // Stdin
-        struct termios oldt, newt;
-        tcgetattr(STDIN_FILENO, &oldt);  // Save the terminal settings
-        newt = oldt;
-        newt.c_lflag &= ~(ICANON | ECHO);  // Disable canonical mode and echo
-        tcsetattr(STDIN_FILENO, TCSANOW, &newt);  // Apply new settings
-
-        int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
-        fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);  // Set non-blocking
-
-        char ch;
-        ssize_t bytesRead = read(STDIN_FILENO, &ch, 1);  // Attempt to read input
-        if (bytesRead > 0) {
-            input = static_cast<uint8_t>(ch);
-            //receiveData(static_cast<uint8_t>(ch));  // Forward character to RX
-            //std::cout << "Received char: " << ch << " (0x" << std::hex << +ch << ")" << std::dec << std::endl;
-        }
-
-        fcntl(STDIN_FILENO, F_SETFL, flags);  // Restore blocking mode
-        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);  // Restore terminal settings
-    }
-    return input;
-}
-
-uint8_t Z80_Core::outputHandler(uint8_t &reg, uint8_t port) {
-    switch (port) {
-        case 0x00: // stdout
-            printf("%c", reg);
-            break;
-        case 0x01: // debug
-            if (DEBUG) {
-                printInfo();
-            }
-            break;
-        default:
-            break;
-    }
-    return reg;
-}
-
-void Z80_Core::interruptHandler() {
-    switch (im){
-        case 0: // TODO
-            break;
-        case 1: // RST 38H
-            push(pc);
-            pc = 0x38;
-            break;
-        case 2: // TODO
-            break;
-    }
-}
-
 void Z80_Core::swapRegs(uint8_t& temp1, uint8_t& temp2) {
     uint8_t temp3 = temp1;
     temp1 = temp2;
@@ -699,18 +857,31 @@ void Z80_Core::decRegPair(uint8_t& l, uint8_t& h) {
 }
 
 void Z80_Core::push(uint16_t reg){
+    //cout << "SP: " << hex << (unsigned)sp << endl;
     sp--;
     memory[sp] = (reg >> 8); // high byte
     sp--;
     memory[sp] = reg & 0xFF; // low byte
+    //cout << "Pushed: " << hex << (unsigned)reg << endl;
+}
+
+void Z80_Core::push_reg_pair(uint8_t l, uint8_t h) {
+    push(convToRegPair(l, h));
 }
 
 uint16_t Z80_Core::pop() {
+    //cout << "SP: " << hex << (unsigned)sp << endl;
     uint16_t reg = memory[sp];
     sp++;
     reg |= memory[sp] << 8;
     sp++;
     return reg;
+}
+
+void Z80_Core::pop_reg_pair(uint8_t& l, uint8_t& h) {
+    uint16_t reg = pop();
+    h = reg >> 8;
+    l = reg & 0xFF;
 }
 
 void Z80_Core::decode_execute(uint8_t instruction) {
@@ -926,7 +1097,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             l = fetchOperand();
             break;
         case 0x2F: // CPL
-            a = ~a;
+            a = ~a + 1;
             f ^= (1 << 4) | (1 << 1);
             break;
         case 0x30: // JR NC, n
@@ -1376,18 +1547,12 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             break;
         case 0xC0: // RET NZ
             if (!(f & FLAG_Z)) {
-                w = memory[sp]; // low byte
-                sp++;
-                z = memory[sp]; // high byte
-                sp++;
-                pc = w | (z >> 8);
+                pc = pop();
             }
+            //cout << "Returned PC by RET NZ: " << hex << (unsigned)pc << endl;
             break;
         case 0xC1: // POP BC
-            c = memory[sp];
-            sp++;
-            b = memory[sp];
-            sp++;
+            pop_reg_pair(c, b);
             break;
         case 0xC2: // JP NZ, nn
             w = fetchOperand(); // low byte
@@ -1408,10 +1573,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             }
             break;
         case 0xC5: // PUSH BC
-            sp--;
-            memory[sp] = b;
-            sp--;
-            memory[sp] = c;
+            push_reg_pair(c, b);
             break;
         case 0xC6: // ADD A, n
             w = fetchOperand();
@@ -1455,7 +1617,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             z = fetchOperand(); // high byte
             push(pc);
             //cout << "Saving PC: " << hex << (unsigned)pc << endl;
-            //ycout << "Saved PC: " << hex << (unsigned)memory[sp+1] << (unsigned)memory[sp] << endl;
+            //cout << "Saved PC: " << hex << (unsigned)memory[sp+1] << (unsigned)memory[sp] << endl;
             pc = (w | (z << 8));
             break;
         case 0xCE: // ADC A, n
@@ -1472,10 +1634,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             }
             break;
         case 0xD1: // POP DE
-            e = memory[sp];
-            sp++;
-            d = memory[sp];
-            sp++;
+            pop_reg_pair(e, d);
             break;
         case 0xD2: // JP NC, nn
             w = fetchOperand(); // low byte
@@ -1497,10 +1656,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             }
             break;
         case 0xD5: // PUSH DE
-            sp--;
-            memory[sp] = d;
-            sp--;
-            memory[sp] = e;
+            push_reg_pair(e, d);
             break;
         case 0xD6: // SUB n
             w = fetchOperand();
@@ -1566,10 +1722,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             }
             break;
         case 0xE1: // POP HL
-            l = memory[sp];
-            sp++;
-            h = memory[sp];
-            sp++;
+            pop_reg_pair(l, h);
             break;
         case 0xE2: // JP PO, nn
             w = fetchOperand(); // low byte
@@ -1584,6 +1737,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             l = w;
             sp++;
             z = memory[sp];
+            sp++;
             memory[sp] = h;
             h = z;
             break;
@@ -1596,7 +1750,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             }
             break;
         case 0xE5: // PUSH HL
-            push((uint16_t)(l | (h << 8)));
+            push_reg_pair(l,h);
             break;
         case 0xE6: // AND n
             w = fetchOperand();
@@ -1657,10 +1811,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             }
             break;
         case 0xF1: // POP AF
-            f = memory[sp];
-            sp++;
-            a = memory[sp];
-            sp++;
+            pop_reg_pair(f, a);
             break;
         case 0xF2: // JP P, nn
             w = fetchOperand(); // low byte
@@ -1670,7 +1821,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             }
             break;
         case 0xF3: // DI
-            iff1, iff2 = false;
+            iff1 = iff2 = false;
             break;
         case 0xF4: // CALL P, nn
             w = fetchOperand(); // low byte
@@ -1681,10 +1832,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             }
             break;
         case 0xF5: // PUSH AF
-            sp--;
-            memory[sp] = a;
-            sp--;
-            memory[sp] = f;
+            push_reg_pair(f, a);
             break;
         case 0xF6: // OR n
             w = fetchOperand();
@@ -1710,7 +1858,7 @@ void Z80_Core::decode_execute(uint8_t instruction) {
             }
             break;
         case 0xFB: // EI
-            iff1, iff2 = true;
+            iff1 = iff2 = 1;
             break;
         case 0xFC: // CALL M, nn
             w = fetchOperand(); // low byte
@@ -2921,20 +3069,17 @@ void Z80_Core::dd_instruction(uint8_t ins) { // TODO: Implement undocumented ins
             cout << "IX BIT Instructions not implemented";
             break;
         case 0xE1: // POP IX
-            w = memory[sp];
-            sp++;
-            z = memory[sp];
-            sp++;
-            ix = z | (w << 8);
+            ix = pop();
             break;
         case 0xE3: // EX (SP), IX
-            // TODO
+            w = ix & 0xff;
+            z = ix >> 8;
+            ix = memory[sp] | (memory[sp+1] << 8);
+            memory[sp] = w;
+            memory[sp+1] = z;
             break;
         case 0xE5: // PUSH IX
-            sp--;
-            memory[sp] = ix & 0xFF;
-            sp--;
-            memory[sp] = ix >> 8;
+            push(ix);
             break;
         case 0xE9: // JP (IX)
             pc = ix;
@@ -3083,20 +3228,13 @@ void Z80_Core::fd_instruction(uint8_t ins) { // TODO: Implement undocumented ins
             cout << "iy BIT Instructions not implemented";
             break;
         case 0xE1: // POP iy
-            w = memory[sp];
-            sp++;
-            z = memory[sp];
-            sp++;
-            iy = z | (w << 8);
+            iy = pop();
             break;
         case 0xE3: // EX (SP), iy
             // TODO
             break;
         case 0xE5: // PUSH iy
-            sp--;
-            memory[sp] = iy & 0xFF;
-            sp--;
-            memory[sp] = iy >> 8;
+            push(iy);
             break;
         case 0xE9: // JP (iy)
             pc = iy;
