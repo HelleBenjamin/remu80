@@ -1,15 +1,12 @@
-#include <stdio.h>
-int x = 10;
-int y = 20;
+int a = 1;
+int b = 2;
+int c = 0;
 
-void main() {
-    if (x == y) {
-        goto equal;
-    }
+int increment(int x) {
+return 1;
 }
-goto end;
 
-equal:
-    int z = 1;
-
-end:
+int main() {
+int num = increment(a);
+return 0;
+}
