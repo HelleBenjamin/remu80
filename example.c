@@ -1,7 +1,12 @@
 uint8_t a = 2;
-uint8_t b = 0;
+uint8_t b;
+uint16_t* ptr = &a;
+uint16_t* ptr2 = 1;
 
-goto main;
+void main() {
+    read(a, 0);
+    foo(1, b);
+}
 
 uint8_t foo(uint8_t num, uint8_t& ret) {
     num++;
@@ -10,11 +15,4 @@ uint8_t foo(uint8_t num, uint8_t& ret) {
 
 void test() {
     foo(a, b);
-}
-
-void main() {
-    read(a, 0);
-    foo(1, b);
-    asm(' HALT ');
-    test();
 }

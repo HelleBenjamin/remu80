@@ -53,7 +53,7 @@
     
 */
 
-#define MAX_VARS 16
+#define MAX_VARS 32
 #define MAX_LINE_LENGTH 128
 
 const char* init[] = {
@@ -90,13 +90,14 @@ int var_count = 0;
 int func_count = 0;
 int label_count = 0;
 
-void add_variable(const char *name) {
+
+void add_variable(const char *name, int type) { // 0 = uint8_t, 1 = uint16_t*
     if (var_count >= MAX_VARS) {
         fprintf(stderr, "Error: Too many variables.\n");
         exit(1);
     }
     strcpy(variables[var_count].name, name);
-    variables[var_count].address = 0x8000 + (var_count * 1);
+    variables[var_count].address = 0x8000 + (var_count * 1); // TODO
     var_count++;
 }
 
@@ -208,10 +209,8 @@ void remove_leading_tabs_and_spaces(char *str) {
     while (*start == '\t' || *start == ' ') {
         start++;
     }
-    // Shift the string to remove leading whitespace
     memmove(str, start, strlen(start) + 1);
 }
-
 
 
 // Compile a single line
@@ -224,21 +223,32 @@ void compile_line(const char *line, FILE *output, int ind) {
 
     if (strcmp(buffer, "\n") == 0) return;
 
-    else if (sscanf(buffer, "#define %s %s", arg1, arg2) == 2) { // Define a macro; TODO
-    }   else if (sscanf(buffer, "uint8_t %[^(](uint8_t %[^,], uint8_t& %[^)]) {", name, arg1, arg2) == 3) { // function declaration
+    else if (sscanf(buffer, "uint8_t %[^(](uint8_t %[^,], uint8_t& %[^)]) {", name, arg1, arg2) == 3) { // function declaration
         add_function(name, 0);
         fprintf(output, "l_%s:\n", name); // func name
         add_variable(arg1);
     }
+
+    // Variables
     else if (sscanf(buffer, "uint8_t %s = %[^;];", arg1, arg2) == 2) { // initialized variable
         add_variable(arg1);
         fprintf(output, "\tLD A, %s\n", arg2); // Load immediate value
         fprintf(output, "\tLD ($%04X), A\n", get_variable_address(arg1));
-    } else if (sscanf(buffer, "uint8_t %s;", arg1) == 1) { // uninitialized variable
+    } else if (sscanf(buffer, "uint8_t %[^;];", arg1) == 1) { // uninitialized variable
         add_variable(arg1);
         fprintf(output, "\tLD A, 0\n"); // Load immediate value
         fprintf(output, "\tLD ($%04X), A\n", get_variable_address(arg1));
-    } else if (sscanf(buffer, "void %[^(]() {", name) == 1) {
+    } else if (sscanf(buffer, "uint16_t* %s = &%[^;];", arg1, arg2) == 2) { // pointer variable
+        add_variable(arg1);
+        fprintf(output, "\tLD HL, $%04X\n", get_variable_address(arg2)); // Load address of variable
+        fprintf(output, "\tLD ($%04X), HL\n", get_variable_address(arg1));
+    } else if (sscanf(buffer, "uint16_t* %s = %[^;];", arg1, arg2) == 2) { // immediate pointer variable
+        add_variable(arg1);
+        fprintf(output, "\tLD HL, %s\n", arg2); // Load address of variable
+        fprintf(output, "\tLD ($%04X), HL\n", get_variable_address(arg1));
+    }
+    
+    else if (sscanf(buffer, "void %[^(]() {", name) == 1) {
         fprintf(output, "l_%s:\n", name);
         label_count++;
     } else if (strcmp(buffer, "return;") == 0) {
@@ -307,6 +317,12 @@ void compile_line(const char *line, FILE *output, int ind) {
         fprintf(output, "\tLD A, ($%04X)\n", get_variable_address(arg1));
         fprintf(output, "\tOUT (%s), A\n", arg2);
     }
+
+    // Inline assembly
+    else if (sscanf(buffer, "asm: %s", arg1) == 1) {
+        fprintf(output, "%s\n", arg1);
+    }
+
 
     else if (strcmp(buffer, "}") == 0) {
         return;
