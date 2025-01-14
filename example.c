@@ -15,4 +15,5 @@ uint8_t foo(uint8_t num, uint8_t& ret) {
 
 void test() {
     foo(a, b);
+    return;
 }

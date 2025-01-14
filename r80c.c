@@ -91,13 +91,13 @@ int func_count = 0;
 int label_count = 0;
 
 
-void add_variable(const char *name, int type) { // 0 = uint8_t, 1 = uint16_t*
+void add_variable(const char *name, int type) { // 1 = uint8_t, 2 = uint16_t*
     if (var_count >= MAX_VARS) {
         fprintf(stderr, "Error: Too many variables.\n");
         exit(1);
     }
     strcpy(variables[var_count].name, name);
-    variables[var_count].address = 0x8000 + (var_count * 1); // TODO
+    variables[var_count].address = 0x8000 + (var_count * type); // TODO
     var_count++;
 }
 
@@ -226,24 +226,25 @@ void compile_line(const char *line, FILE *output, int ind) {
     else if (sscanf(buffer, "uint8_t %[^(](uint8_t %[^,], uint8_t& %[^)]) {", name, arg1, arg2) == 3) { // function declaration
         add_function(name, 0);
         fprintf(output, "l_%s:\n", name); // func name
-        add_variable(arg1);
+        fprintf(output, "\tPUSH DE\n"); // Reserve return value pointer
+        add_variable(arg1, 1);
     }
 
     // Variables
     else if (sscanf(buffer, "uint8_t %s = %[^;];", arg1, arg2) == 2) { // initialized variable
-        add_variable(arg1);
+        add_variable(arg1, 1);
         fprintf(output, "\tLD A, %s\n", arg2); // Load immediate value
         fprintf(output, "\tLD ($%04X), A\n", get_variable_address(arg1));
     } else if (sscanf(buffer, "uint8_t %[^;];", arg1) == 1) { // uninitialized variable
-        add_variable(arg1);
+        add_variable(arg1, 1);
         fprintf(output, "\tLD A, 0\n"); // Load immediate value
         fprintf(output, "\tLD ($%04X), A\n", get_variable_address(arg1));
     } else if (sscanf(buffer, "uint16_t* %s = &%[^;];", arg1, arg2) == 2) { // pointer variable
-        add_variable(arg1);
+        add_variable(arg1, 2);
         fprintf(output, "\tLD HL, $%04X\n", get_variable_address(arg2)); // Load address of variable
         fprintf(output, "\tLD ($%04X), HL\n", get_variable_address(arg1));
     } else if (sscanf(buffer, "uint16_t* %s = %[^;];", arg1, arg2) == 2) { // immediate pointer variable
-        add_variable(arg1);
+        add_variable(arg1, 2);
         fprintf(output, "\tLD HL, %s\n", arg2); // Load address of variable
         fprintf(output, "\tLD ($%04X), HL\n", get_variable_address(arg1));
     }
@@ -251,7 +252,7 @@ void compile_line(const char *line, FILE *output, int ind) {
     else if (sscanf(buffer, "void %[^(]() {", name) == 1) {
         fprintf(output, "l_%s:\n", name);
         label_count++;
-    } else if (strcmp(buffer, "return;") == 0) {
+    } else if (strcmp(buffer, "return;") == 0) { // Void return
         fprintf(output, "\tRET\n");
     } else if (sscanf(buffer, "if (%s == %s)", arg1, arg2) == 2) {
         fprintf(output, "\tLD A, ($%04X)\n", get_variable_address(arg1));
@@ -278,6 +279,7 @@ void compile_line(const char *line, FILE *output, int ind) {
     // Functions
     else if (strstr(buffer, "return ") == buffer) {
         sscanf(buffer, "return %[^;];", arg1);
+        fprintf(output, "\tPOP DE\n");
         if (!isdigit(arg1[0])) {
             fprintf(output, "\tEX DE, HL\n"); // HL = return address
             fprintf(output, "\tLD A, ($%04X)\n", get_variable_address(arg1));
