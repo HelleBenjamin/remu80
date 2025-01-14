@@ -61,6 +61,19 @@ const char* init[] = {
 
 };
 
+const char* reservedKeywords[] = {
+    "uint8_t", "void", "read", "write"
+};
+
+bool isReservedKeyword(const char *keyword) {
+    for (int i = 0; i < sizeof(reservedKeywords) / sizeof(reservedKeywords[0]); i++) {
+        if (strcmp(keyword, reservedKeywords[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 typedef struct {
     char name[16];
     int address;
@@ -254,8 +267,8 @@ void compile_line(const char *line, FILE *output, int ind) {
 
     // Functions
     else if (strstr(buffer, "return ") == buffer) {
-        sscanf(buffer, "return %s;", arg1);
-        if (is_variable(arg1)) {
+        sscanf(buffer, "return %[^;];", arg1);
+        if (!isdigit(arg1[0])) {
             fprintf(output, "\tEX DE, HL\n"); // HL = return address
             fprintf(output, "\tLD A, ($%04X)\n", get_variable_address(arg1));
             fprintf(output, "\tLD (HL), A\n");
@@ -265,6 +278,7 @@ void compile_line(const char *line, FILE *output, int ind) {
         fprintf(output, "\tRET\n"); // End function
     }
     else if (sscanf(buffer, "%[^(](%[^,], %[^)]);", name, arg1, arg2) == 3) {
+        if (isReservedKeyword(name)) return;
         add_function(name, get_variable_address(arg2));
         // Save arg1
         if (is_variable(arg1)) {
@@ -280,10 +294,22 @@ void compile_line(const char *line, FILE *output, int ind) {
         }
 
         fprintf(output, "\tCALL l_%s\n", name);      // Call function
+    } else if (sscanf(buffer, "%[^(]();", name) == 1) { // Call void function, fix
+        if (isReservedKeyword(name)) return;
+        //fprintf(output, "\tCALL l_%s\n", name);
+    }
+
+    // Input/Output
+    else if (sscanf(buffer, "read(%[^,], %[^)]);", arg1, arg2) == 2) { // variable, port
+        fprintf(output, "\tIN A, (%s)\n", arg2);
+        fprintf(output, "\tLD ($%04X), A\n", get_variable_address(arg1));
+    } else if (sscanf(buffer, "write(%[^,], %[^)]);", arg1, arg2) == 2) { // variable, port
+        fprintf(output, "\tLD A, ($%04X)\n", get_variable_address(arg1));
+        fprintf(output, "\tOUT (%s), A\n", arg2);
     }
 
     else if (strcmp(buffer, "}") == 0) {
-        // Skip closing braces
+        return;
     } else if (strlen(buffer) == 0) {
         // Skip empty lines
     } else {

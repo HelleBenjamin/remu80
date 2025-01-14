@@ -1,6 +1,5 @@
 uint8_t a = 2;
 uint8_t b = 0;
-uint8_t ret = 0;
 
 goto main;
 
@@ -14,5 +13,8 @@ void test() {
 }
 
 void main() {
-    foo(1, b);     
+    read(a, 0);
+    foo(1, b);
+    asm(' HALT ');
+    test();
 }
