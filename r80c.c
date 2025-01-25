@@ -222,6 +222,8 @@ void compile_line(const char *line, FILE *output, int ind) {
     trim_whitespace(buffer);
 
     if (strcmp(buffer, "\n") == 0) return;
+    else if (strcmp(buffer, "}") == 0) return;
+    else if (strlen(buffer) == 0) return;
 
     else if (sscanf(buffer, "uint8_t %[^(](uint8_t %[^,], uint8_t& %[^)]) {", name, arg1, arg2) == 3) { // function declaration
         add_function(name, 0);
@@ -276,6 +278,15 @@ void compile_line(const char *line, FILE *output, int ind) {
         fprintf(output, "\tLD ($%04X), A\n", get_variable_address(name));
     }
 
+    // Input/Output
+    else if (sscanf(buffer, "read(%[^,], %[^)]);", arg1, arg2) == 2) { // variable, port
+        fprintf(output, "\tIN A, (%s)\n", arg2);
+        fprintf(output, "\tLD ($%04X), A\n", get_variable_address(arg1));
+    } else if (sscanf(buffer, "write(%[^,], %[^)]);", arg1, arg2) == 2) { // variable, port
+        fprintf(output, "\tLD A, ($%04X)\n", get_variable_address(arg1));
+        fprintf(output, "\tOUT (%s), A\n", arg2);
+    }
+
     // Functions
     else if (strstr(buffer, "return ") == buffer) {
         sscanf(buffer, "return %[^;];", arg1);
@@ -308,28 +319,13 @@ void compile_line(const char *line, FILE *output, int ind) {
         fprintf(output, "\tCALL l_%s\n", name);      // Call function
     } else if (sscanf(buffer, "%[^(]();", name) == 1) { // Call void function, fix
         if (isReservedKeyword(name)) return;
-        //fprintf(output, "\tCALL l_%s\n", name);
+        fprintf(output, "\tCALL l_%s\n", name);
     }
 
-    // Input/Output
-    else if (sscanf(buffer, "read(%[^,], %[^)]);", arg1, arg2) == 2) { // variable, port
-        fprintf(output, "\tIN A, (%s)\n", arg2);
-        fprintf(output, "\tLD ($%04X), A\n", get_variable_address(arg1));
-    } else if (sscanf(buffer, "write(%[^,], %[^)]);", arg1, arg2) == 2) { // variable, port
-        fprintf(output, "\tLD A, ($%04X)\n", get_variable_address(arg1));
-        fprintf(output, "\tOUT (%s), A\n", arg2);
-    }
 
     // Inline assembly
     else if (sscanf(buffer, "asm: %s", arg1) == 1) {
         fprintf(output, "%s\n", arg1);
-    }
-
-
-    else if (strcmp(buffer, "}") == 0) {
-        return;
-    } else if (strlen(buffer) == 0) {
-        // Skip empty lines
     } else {
         fprintf(stderr, "Error: Unrecognized line: %s at %d \n", line, ind);
         exit(1);

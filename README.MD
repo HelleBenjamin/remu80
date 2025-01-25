@@ -2,7 +2,8 @@
 
 ## THIS PROJECT IS A WORK IN PROGRESS. SOME FEATURES MAY BE BROKEN OR MISSING.
 
-Remu80 is a simple Z80 emulator written in C++. Its goal is to be a fully functional emulator of the Z80 instruction set
+Remu80 is a simple Z80 emulator written in C++. Its goal is to be a fully functional emulator of the Z80 instruction set.
+It also comes with a compiler for the ZC80 language. ZC80 is a C-like language, which is almost fully compatible with C(with minor exceptions) thus making it easy to port programs from C to ZC80.
 
 ## Features
 - Z80 instruction set (undocumented instructions will be added later)
