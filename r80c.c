@@ -7,12 +7,11 @@
 /*  
     ZC80 compiler for Z80
 
-    ZC80 is a C-like language for the Z80 CPU. The ZC80 is almost fully compatible with C except for functions.
+    ZC80 is a C-like language for the Z80 CPU. The ZC80 is almost fully compatible with C.
 
     Declare all variables before any functions
 
     HL as parameter for functions
-    DE as return value pointer
 
     All variables treated as 8-bit
 
@@ -30,28 +29,8 @@
         }
 
 
-    In ZC80:
-
-        uint8_t a = 2;
-        uint8_t b;
-
-        uint8_t foo(uint8_t a, uint8_t& ret) {
-            a++;
-            return a;
-        }
-
-        void main() {
-            foo(a, b);     
-        }
-
-
-
 */
 
-/*
-    TODO:
-    
-*/
 
 #define MAX_VARS 32
 #define MAX_LINE_LENGTH 128
@@ -215,7 +194,7 @@ void remove_leading_tabs_and_spaces(char *str) {
 
 // Compile a single line
 void compile_line(const char *line, FILE *output, int ind) {
-    char keyword[16], name[16], arg1[16], arg2[16];
+    char keyword[16], name[16], arg1[16], arg2[16], fnName[16];
     char buffer[MAX_LINE_LENGTH];
     strcpy(buffer, line);
     remove_leading_tabs_and_spaces(buffer);
@@ -224,11 +203,14 @@ void compile_line(const char *line, FILE *output, int ind) {
     if (strcmp(buffer, "\n") == 0) return;
     else if (strcmp(buffer, "}") == 0) return;
     else if (strlen(buffer) == 0) return;
+    else if (strcmp(buffer, "//") == 0) return;
+    else if (strcmp(buffer, "__halt;") == 0) fprintf(output, "\tHALT\n");
 
-    else if (sscanf(buffer, "uint8_t %[^(](uint8_t %[^,], uint8_t& %[^)]) {", name, arg1, arg2) == 3) { // function declaration
-        add_function(name, 0);
-        fprintf(output, "l_%s:\n", name); // func name
-        fprintf(output, "\tPUSH DE\n"); // Reserve return value pointer
+    else if (sscanf(buffer, "uint8_t %[^(](uint8_t %[^)]) {", fnName, arg1) == 2) { // function declaration
+        add_function(fnName, 0);
+        add_variable(arg1, 1);
+        fprintf(output, "l_%s:\n", fnName); // func name
+        fprintf(output, "\tLD ($%04X), HL\n", get_variable_address(arg1));
         add_variable(arg1, 1);
     }
 
@@ -250,7 +232,7 @@ void compile_line(const char *line, FILE *output, int ind) {
         fprintf(output, "\tLD HL, %s\n", arg2); // Load address of variable
         fprintf(output, "\tLD ($%04X), HL\n", get_variable_address(arg1));
     }
-    
+
     else if (sscanf(buffer, "void %[^(]() {", name) == 1) {
         fprintf(output, "l_%s:\n", name);
         label_count++;
@@ -276,6 +258,24 @@ void compile_line(const char *line, FILE *output, int ind) {
         fprintf(output, "\tLD A, ($%04X)\n", get_variable_address(name));
         fprintf(output, "\tDEC A\n");
         fprintf(output, "\tLD ($%04X), A\n", get_variable_address(name));
+    } else if (sscanf(buffer, "%s += %[^;];", name, arg1) == 2) {
+        if (!isdigit(arg1[0])) { // Variable
+            fprintf(output, "\tLD A, ($%04X)\n", get_variable_address(arg1));
+        } else {
+            fprintf(output, "\tLD A, %s\n", arg1); // Immediate value
+        }
+        fprintf(output, "\tLD HL, $%04X\n", get_variable_address(name));
+        fprintf(output, "\tADD A, (HL)\n");
+        fprintf(output, "\tLD ($%04X), A\n", get_variable_address(name));
+    } else if (sscanf(buffer, "%s -= %[^;];", name, arg1) == 2) {
+        if (!isdigit(arg1[0])) { // Variable
+            fprintf(output, "\tLD A, ($%04X)\n", get_variable_address(arg1));
+        } else {
+            fprintf(output, "\tLD A, %s\n", arg1); // Immediate value
+        }
+        fprintf(output, "\tLD HL, $%04X\n", get_variable_address(name));
+        fprintf(output, "\tSUB A, (HL)\n");
+        fprintf(output, "\tLD ($%04X), A\n", get_variable_address(name));
     }
 
     // Input/Output
@@ -290,33 +290,28 @@ void compile_line(const char *line, FILE *output, int ind) {
     // Functions
     else if (strstr(buffer, "return ") == buffer) {
         sscanf(buffer, "return %[^;];", arg1);
-        fprintf(output, "\tPOP DE\n");
-        if (!isdigit(arg1[0])) {
-            fprintf(output, "\tEX DE, HL\n"); // HL = return address
+        if (!isdigit(arg1[0])) { // Variable
             fprintf(output, "\tLD A, ($%04X)\n", get_variable_address(arg1));
-            fprintf(output, "\tLD (HL), A\n");
         } else {
             fprintf(output, "\tLD A, %s\n", arg1); // Immediate return value
         }
         fprintf(output, "\tRET\n"); // End function
     }
-    else if (sscanf(buffer, "%[^(](%[^,], %[^)]);", name, arg1, arg2) == 3) {
-        if (isReservedKeyword(name)) return;
-        add_function(name, get_variable_address(arg2));
+    else if (sscanf(buffer, "%s = %[^(](%[^)]);", name, fnName, arg1) == 3) { // variable = function(arg1);
+        if (isReservedKeyword(fnName)) return;
+        //add_function(fnName, get_variable_address(arg2));
         // Save arg1
         if (is_variable(arg1)) {
             fprintf(output, "\tLD HL, ($%04X)\n", get_variable_address(arg1)); // Load parameter
         } else {
             fprintf(output, "\tLD HL, %s\n", arg1); // Immediate parameter
         }
-        // Save arg2
-        if (is_variable(arg2)) {
-            fprintf(output, "\tLD DE, ($%04X)\n", get_variable_address(arg2)); // Load parameter
-        } else {
-            fprintf(output, "\tLD DE, %s\n", arg2); // Immediate parameter
-        }
 
-        fprintf(output, "\tCALL l_%s\n", name);      // Call function
+        fprintf(output, "\tCALL l_%s\n", fnName);      // Call function
+
+        // Load return value
+        fprintf(output, "\tLD ($%04X), A\n", get_variable_address(name));
+
     } else if (sscanf(buffer, "%[^(]();", name) == 1) { // Call void function, fix
         if (isReservedKeyword(name)) return;
         fprintf(output, "\tCALL l_%s\n", name);
@@ -324,7 +319,7 @@ void compile_line(const char *line, FILE *output, int ind) {
 
 
     // Inline assembly
-    else if (sscanf(buffer, "asm: %s", arg1) == 1) {
+    else if (sscanf(buffer, "asm('%['])", arg1) == 1) {
         fprintf(output, "%s\n", arg1);
     } else {
         fprintf(stderr, "Error: Unrecognized line: %s at %d \n", line, ind);

@@ -1,26 +1,20 @@
 uint8_t a = 2;
-uint8_t b;
+uint8_t b = 3;
 
 void main() {
-    read(a, 0);
-    foo(1, b);
-    bar(2, b);
-    test();
-    read(a, 1);
+    a = foo(a);
+    a += 3;
+    b = bar(a);
+    a += b;
+    __halt;
 }
 
-uint8_t foo(uint8_t num, uint8_t& ret) {
+uint8_t foo(uint8_t num) {
     num++;
     return num;
 }
 
-uint8_t bar(uint8_t num, uint8_t& ret) {
+uint8_t bar(uint8_t num) {
     num--;
     return num;
-}
-
-void test() {
-    foo(a, b);
-    bar(a, b);
-    return;
 }

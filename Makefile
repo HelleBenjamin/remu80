@@ -5,3 +5,6 @@ all:
 
 assemble:
 	vasmz80_oldstyle -Fhunk -dotdir -Fihex -o hello.hex hello.asm -L hello.lst
+
+asmC:
+	vasmz80_oldstyle -Fhunk -dotdir -Fihex -o test.hex test.asm -L test.lst
